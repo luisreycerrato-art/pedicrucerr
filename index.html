@@ -3,187 +3,223 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Grupo Crucerr - Gestión Total</title>
-  
+  <title>CRUCERR - PEDIDOS Y GESTIÓN</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
-
   <style>
-    :root { --azul: #052c5c; --verde: #28a745; --rojo: #dc3545; --naranja: #fd7e14; --bg: #f4f7f6; }
-    body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 10px; }
+    :root { --azul: #052c5c; --verde: #28a745; --rojo: #dc3545; --bg: #f4f7f6; }
+    body { font-family: sans-serif; background: var(--bg); margin: 0; padding: 10px; }
     .header { background: var(--azul); color: white; padding: 15px; border-radius: 12px; text-align: center; margin-bottom: 10px; }
     .card { background: white; border-radius: 12px; padding: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 15px; }
-    input, select, button { width: 100%; padding: 12px; margin-top: 8px; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; font-size: 16px; }
-    button { color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.3s; }
-    .btn-azul { background: var(--azul); }
-    .btn-verde { background: var(--verde); }
-    .nav-container { display: flex; gap: 5px; margin-bottom: 15px; flex-wrap: wrap; }
-    .tab-btn { background: #ccc; color: #333; flex: 1; min-width: 80px; font-size: 14px; padding: 10px 5px; border-radius: 8px; }
+    .nav-tabs { display: flex; gap: 5px; margin-bottom: 15px; }
+    .tab-btn { background: #ddd; border: none; padding: 12px; border-radius: 8px; flex: 1; font-weight: bold; cursor: pointer; }
     .active-tab { background: var(--azul); color: white; }
-    .table-container { overflow-x: auto; margin-top: 10px; }
-    table { width: 100%; border-collapse: collapse; background: white; font-size: 14px; }
-    th { background: #eee; padding: 10px; text-align: left; }
-    td { padding: 10px; border-bottom: 1px solid #eee; }
-    .stock-badge { padding: 4px 8px; border-radius: 4px; font-weight: bold; }
-    .stock-low { background: #ffebeb; color: var(--rojo); }
-    .stock-ok { background: #ebffeb; color: var(--verde); }
-    .total-box { background: var(--azul); color: white; padding: 15px; border-radius: 10px; text-align: right; margin-top: 15px; }
-    .total-box span { font-size: 1.5rem; font-weight: bold; display: block; }
+    input, select, button { width: 100%; padding: 12px; margin-top: 8px; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; font-size: 16px; }
+    button { color: white; border: none; font-weight: bold; cursor: pointer; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th, td { padding: 8px; text-align: left; border-bottom: 1px solid #eee; }
+    .scroll { max-height: 300px; overflow-y: auto; background: white; border-radius: 8px; }
   </style>
 </head>
 <body>
 
 <div class="header">
   <h2 style="margin:0;">GRUPO CRUCERR</h2>
-  <div id="status" style="font-size:12px;">Sincronizando...</div>
+  <div id="status" style="font-size: 11px;">Conectando...</div>
 </div>
 
-<div class="nav-container">
-  <button id="btn-vender-tab" class="tab-btn active-tab" onclick="cambiarVista('vender')">🛒 Vender</button>
-  <button id="btn-stock-tab" class="tab-btn" onclick="cambiarVista('stock')">📦 Inventario</button>
-  <button id="btn-clientes-tab" class="tab-btn" onclick="cambiarVista('clientes')">👥 Clientes</button>
+<div class="nav-tabs">
+  <button id="t-vender" class="tab-btn active-tab" onclick="showTab('vender')">🛒 Pedidos</button>
+  <button id="t-stock" class="tab-btn" onclick="showTab('stock')">📦 Inventario</button>
+  <button id="t-clientes" class="tab-btn" onclick="showTab('clientes')">👥 Clientes</button>
 </div>
 
-<div id="vista-vender">
+<div id="v-vender" class="tab-content">
   <div class="card">
     <label>👤 Cliente:</label>
-    <select id="v-cliente-sel"></select>
-    <label style="margin-top:10px; display:block;">🔍 Buscar Producto:</label>
-    <input type="text" id="buscador-prod" placeholder="Nombre del medicamento..." oninput="filtrarVenta()">
+    <select id="sel-cliente"></select>
+    <label>🔍 Buscar Medicamento:</label>
+    <input type="text" id="bus-prod" placeholder="Nombre..." oninput="filtrarVenta()">
     <div style="display: flex; gap: 8px;">
-      <div style="flex: 3;"><select id="v-prod-sel"></select></div>
-      <div style="flex: 1;"><input type="number" id="v-cant" value="1" min="1"></div>
+      <div style="flex: 3;"><select id="sel-prod"></select></div>
+      <div style="flex: 1;"><input type="number" id="inp-cant" value="1"></div>
     </div>
-    <button onclick="alCarrito()" class="btn-azul" style="margin-top:15px;">➕ Añadir al Pedido</button>
+    <button onclick="addCarrito()" style="background: var(--azul); margin-top:10px;">➕ Añadir al Carrito</button>
   </div>
-
   <div class="card">
-    <h3>📋 Detalle del Pedido</h3>
-    <div id="lista-carrito"></div>
-    <div class="total-box">TOTAL VENTA <span id="total-lbl">L. 0.00</span></div>
-    <select id="v-metodo" style="margin-top:15px; border: 2px solid var(--azul);">
+    <div id="list-carrito"></div>
+    <div style="background:var(--azul); color:white; padding:15px; border-radius:10px; text-align:right; margin-top:10px;">
+      TOTAL L. <span id="lbl-total" style="font-size:1.5rem; font-weight:bold;">0.00</span>
+    </div>
+    <select id="sel-metodo" style="margin-top:10px;">
       <option value="contado">PAGO: CONTADO ✅</option>
       <option value="credito">PAGO: CRÉDITO ❌</option>
     </select>
-    <button onclick="vender()" class="btn-verde" style="padding:18px; font-size:18px; margin-top:10px; width:100%;">🚀 FINALIZAR Y FACTURAR</button>
+    <button onclick="finalizarVenta()" style="background:var(--verde); margin-top:15px; padding:18px; font-size:18px;">🚀 FACTURAR Y ENVIAR</button>
   </div>
 </div>
 
-<div id="vista-stock" style="display:none;">
+<div id="v-stock" class="tab-content" style="display:none;">
   <div class="card">
-    <button onclick="abrirModal()" class="btn-verde">➕ Nuevo Producto</button>
-    <input type="text" id="filtro-inv" placeholder="Filtrar inventario..." oninput="renderInventario()" style="margin-top:15px;">
-    
-    <div class="table-container">
+    <button onclick="abrirModalProd()" style="background:var(--verde);">➕ Registrar Producto Nuevo</button>
+    <div class="scroll" style="margin-top:15px;">
       <table>
-        <thead>
-          <tr>
-            <th>Producto</th>
-            <th>Venta</th>
-            <th>Stock</th>
-            <th></th>
-          </tr>
-        </thead>
+        <thead><tr><th>Nombre</th><th>Venta</th><th>Stock</th><th>Editar</th></tr></thead>
         <tbody id="tabla-inv-body"></tbody>
       </table>
     </div>
   </div>
 </div>
 
-<div id="vista-clientes" style="display:none;">
+<div id="v-clientes" class="tab-content" style="display:none;">
   <div class="card">
     <h3>🆕 Nuevo Cliente</h3>
-    <input type="text" id="c-nombre" placeholder="Nombre de Pulpería">
-    <input type="text" id="c-direccion" placeholder="Dirección">
-    <input type="text" id="c-tel" placeholder="Teléfono">
-    <button onclick="guardarCliente()" class="btn-azul" style="margin-top:15px;">💾 Guardar Cliente</button>
+    <input type="text" id="c-nombre" placeholder="Nombre del Negocio">
+    <input type="text" id="c-tel" placeholder="Teléfono de WhatsApp">
+    <input type="text" id="c-dir" placeholder="Dirección">
+    <button onclick="guardarCliente()" style="background:var(--azul); margin-top:10px;">💾 Guardar Cliente</button>
   </div>
 </div>
 
-<div id="modal-prod" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:1000; padding:20px; box-sizing:border-box;">
-  <div class="card" style="max-width:400px; margin:auto; margin-top:10%;">
+<div id="modal-prod" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:2000; padding:20px;">
+  <div class="card" style="max-width:400px; margin:auto;">
     <h3 id="modal-titulo">Producto</h3>
     <input type="hidden" id="m-id">
     <label>Nombre:</label><input type="text" id="m-nombre">
-    <label>Precio Compra:</label><input type="number" id="m-compra" step="0.01">
-    <label>Precio Venta:</label><input type="number" id="m-venta" step="0.01">
-    <label>Stock:</label><input type="number" id="m-stock">
-    <div style="display:flex; gap:10px; margin-top:20px;">
-      <button onclick="cerrarModal()" style="background:#666;">Cancelar</button>
-      <button onclick="guardarProducto()" class="btn-verde">Guardar</button>
-    </div>
+    <label>P. Compra:</label><input type="number" id="m-compra" step="0.01">
+    <label>P. Venta:</label><input type="number" id="m-venta" step="0.01">
+    <label>Stock Inicial:</label><input type="number" id="m-stock">
+    <button onclick="guardarProducto()" style="background:var(--verde); margin-top:10px;">Guardar</button>
+    <button onclick="cerrarModal()" style="background:#666; margin-top:5px;">Cerrar</button>
   </div>
 </div>
 
 <script>
 const SB_URL = 'https://jbdfuhowfqfjmpjygaow.supabase.co';
 const SB_KEY = 'sb_publishable_4mLkbjij9oGVtS_zX051VQ_Vsbjjga9';
-const _supabase = supabase.createClient(SB_URL, SB_KEY);
+const _sb = supabase.createClient(SB_URL, SB_KEY);
 
 let productos = [], clientes = [], carrito = [];
 
-window.onload = cargarTodo;
+window.onload = async () => { await cargarDatos(); };
 
-async function cargarTodo() {
-  document.getElementById('status').innerText = 'Actualizando...';
-  const { data: p } = await _supabase.from('inventario').select('*').order('nombre');
-  const { data: c } = await _supabase.from('pulperia').select('*').order('nombre');
+async function cargarDatos() {
+  document.getElementById('status').innerText = '⏳ Sincronizando...';
+  const { data: p } = await _sb.from('inventario').select('*').order('nombre');
+  const { data: c } = await _sb.from('pulperia').select('*').order('nombre');
   
   productos = p || []; clientes = c || [];
-  actualizarSelects();
-  renderInventario();
+  actualizarUI();
   document.getElementById('status').innerText = '● Sistema Online';
 }
 
-function actualizarSelects() {
-  const h = productos.map(p => `<option value="${p.id}">${p.nombre} (S: ${p.stock})</option>`).join('');
-  document.getElementById('v-prod-sel').innerHTML = h;
-  document.getElementById('v-cliente-sel').innerHTML = clientes.map(c => `<option value="${c.nombre}">${c.nombre}</option>`).join('');
-}
-
-function cambiarVista(v) {
-  document.getElementById('vista-vender').style.display = v === 'vender' ? 'block' : 'none';
-  document.getElementById('vista-stock').style.display = v === 'stock' ? 'block' : 'none';
-  document.getElementById('vista-clientes').style.display = v === 'clientes' ? 'block' : 'none';
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active-tab'));
-  document.getElementById('btn-' + v + '-tab').classList.add('active-tab');
-}
-
-function renderInventario() {
-  const f = document.getElementById('filtro-inv').value.toLowerCase();
-  const filtered = productos.filter(p => p.nombre.toLowerCase().includes(f));
-  document.getElementById('tabla-inv-body').innerHTML = filtered.map(p => `
+function actualizarUI() {
+  const pOpts = productos.map(p => `<option value="${p.id}">${p.nombre} (S: ${p.stock})</option>`).join('');
+  document.getElementById('sel-prod').innerHTML = pOpts;
+  document.getElementById('sel-cliente').innerHTML = clientes.map(c => `<option value="${c.nombre}" data-tel="${c.telefono}">${c.nombre}</option>`).join('');
+  
+  document.getElementById('tabla-inv-body').innerHTML = productos.map(p => `
     <tr>
-      <td><b>${p.nombre}</b></td>
-      <td>L. ${p.precio_venta}</td>
-      <td><span class="stock-badge ${p.stock < 5 ? 'stock-low' : 'stock-ok'}">${p.stock}</span></td>
-      <td><button onclick="editarProd(${p.id})" style="background:var(--azul); padding:5px; font-size:12px; width:auto;">Edit</button></td>
-    </tr>
-  `).join('');
+      <td>${p.nombre}</td>
+      <td>L.${p.precio_venta}</td>
+      <td style="color:${p.stock < 10 ? 'red':'green'}"><b>${p.stock}</b></td>
+      <td><button onclick="editarProdInv(${p.id})" style="background:var(--azul); font-size:10px; width:auto; padding:4px;">Edit</button></td>
+    </tr>`).join('');
 }
 
-function abrirModal() {
-  document.getElementById('m-id').value = "";
-  document.getElementById('m-nombre').value = "";
-  document.getElementById('m-compra').value = "";
-  document.getElementById('m-venta').value = "";
-  document.getElementById('m-stock').value = "";
-  document.getElementById('modal-prod').style.display = 'block';
+function showTab(tab) {
+  document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active-tab'));
+  document.getElementById('v-' + tab).style.display = 'block';
+  document.getElementById('t-' + tab).classList.add('active-tab');
 }
 
-function editarProd(id) {
+function filtrarVenta() {
+  const b = document.getElementById('bus-prod').value.toLowerCase();
+  const f = productos.filter(p => p.nombre.toLowerCase().includes(b));
+  document.getElementById('sel-prod').innerHTML = f.map(p => `<option value="${p.id}">${p.nombre} (S: ${p.stock})</option>`).join('');
+}
+
+function addCarrito() {
+  const id = document.getElementById('sel-prod').value;
+  const cant = parseInt(document.getElementById('inp-cant').value);
+  const p = productos.find(x => x.id == id);
+  if(!p || cant > p.stock) return alert("Stock insuficiente");
+  carrito.push({ ...p, cant, subt: p.precio_venta * cant });
+  renderCarrito();
+}
+
+function renderCarrito() {
+  let t = 0; document.getElementById('list-carrito').innerHTML = carrito.map((i, idx) => {
+    t += i.subt;
+    return `<div style="padding:8px; border-bottom:1px solid #eee;">${i.nombre} (x${i.cant}) - L.${i.subt.toFixed(2)}</div>`;
+  }).join('');
+  document.getElementById('lbl-total').innerText = t.toFixed(2);
+}
+
+async function finalizarVenta() {
+  if(carrito.length === 0) return alert("Carrito vacío");
+  const selCli = document.getElementById('sel-cliente');
+  const cliNombre = selCli.value;
+  const cliTel = selCli.options[selCli.selectedIndex].getAttribute('data-tel') || "";
+  const tot = document.getElementById('lbl-total').innerText;
+  
+  // Guardar en Supabase
+  const { error } = await _sb.from('ventas').insert([{ 
+    cliente: cliNombre, total: parseFloat(tot), metodo_pago: document.getElementById('sel-metodo').value, 
+    pagado: document.getElementById('sel-metodo').value === 'contado', detalle: JSON.stringify(carrito), fecha: new Date().toISOString()
+  }]);
+  
+  if(error) return alert("Error: " + error.message);
+  
+  for(const i of carrito) {
+    await _sb.from('inventario').update({ stock: i.stock - i.cant }).eq('id', i.id);
+  }
+
+  // Generar Factura y Abrir WhatsApp
+  generarFacturaYWhatsApp(cliNombre, cliTel, tot, [...carrito]);
+}
+
+function generarFacturaYWhatsApp(cli, tel, tot, items) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  doc.text("GRUPO CRUCERR - FACTURA", 10, 10);
+  doc.text(`Cliente: ${cli}`, 10, 20);
+  doc.autoTable({ head:[['Prod', 'Cant', 'Total']], body: items.map(i=>[i.nombre, i.cant, i.subt.toFixed(2)]), startY: 30 });
+  doc.text(`TOTAL: L. ${tot}`, 10, doc.lastAutoTable.finalY + 10);
+  
+  // Descarga el PDF
+  doc.save(`Factura_${cli}.pdf`);
+
+  // Opción WhatsApp: Envía texto detallado para compartir rápido
+  const msg = window.encodeURIComponent(`*GRUPO CRUCERR*\nFactura para: ${cli}\nTotal: L. ${tot}\n_El PDF se ha descargado en el teléfono._`);
+  const whatsappURL = `https://api.whatsapp.com/send?phone=504${tel}&text=${msg}`;
+  
+  setTimeout(() => {
+    window.location.href = whatsappURL;
+  }, 1500);
+}
+
+async function guardarCliente() {
+  const n = document.getElementById('c-nombre').value;
+  const t = document.getElementById('c-tel').value;
+  const d = document.getElementById('c-dir').value;
+  await _sb.from('pulperia').insert([{ nombre: n, telefono: t, direccion: d }]);
+  alert("Cliente Guardado"); cargarDatos();
+}
+
+function abrirModalProd() { document.getElementById('m-id').value=""; document.getElementById('modal-prod').style.display='block'; }
+function cerrarModal() { document.getElementById('modal-prod').style.display='none'; }
+function editarProdInv(id) {
   const p = productos.find(x => x.id == id);
   document.getElementById('m-id').value = p.id;
   document.getElementById('m-nombre').value = p.nombre;
   document.getElementById('m-compra').value = p.precio_compra;
   document.getElementById('m-venta').value = p.precio_venta;
   document.getElementById('m-stock').value = p.stock;
-  document.getElementById('modal-prod').style.display = 'block';
+  document.getElementById('modal-prod').style.display='block';
 }
-
-function cerrarModal() { document.getElementById('modal-prod').style.display = 'none'; }
-
 async function guardarProducto() {
   const id = document.getElementById('m-id').value;
   const obj = {
@@ -192,66 +228,9 @@ async function guardarProducto() {
     precio_venta: parseFloat(document.getElementById('m-venta').value),
     stock: parseInt(document.getElementById('m-stock').value)
   };
-  if(id) await _supabase.from('inventario').update(obj).eq('id', id);
-  else await _supabase.from('inventario').insert([obj]);
-  cerrarModal(); cargarTodo();
-}
-
-function filtrarVenta() {
-  const b = document.getElementById('buscador-prod').value.toLowerCase();
-  const f = productos.filter(p => p.nombre.toLowerCase().includes(b));
-  document.getElementById('v-prod-sel').innerHTML = f.map(p => `<option value="${p.id}">${p.nombre} (S: ${p.stock})</option>`).join('');
-}
-
-function alCarrito() {
-  const id = document.getElementById('v-prod-sel').value;
-  const cant = parseInt(document.getElementById('v-cant').value);
-  const p = productos.find(x => x.id == id);
-  if(cant > p.stock) return alert("Stock insuficiente");
-  carrito.push({ id: p.id, nombre: p.nombre, cant, precio: p.precio_venta, subt: p.precio_venta * cant });
-  renderCarrito();
-}
-
-function renderCarrito() {
-  let t = 0; document.getElementById('lista-carrito').innerHTML = carrito.map((item, i) => {
-    t += item.subt;
-    return `<div style="border-bottom:1px solid #eee; padding:5px 0;">${item.nombre} (x${item.cant}) - L. ${item.subt.toFixed(2)} <button onclick="carrito.splice(${i},1);renderCarrito()" style="background:var(--rojo); width:auto; padding:2px 8px; float:right;">X</button></div>`;
-  }).join('');
-  document.getElementById('total-lbl').innerText = `L. ${t.toFixed(2)}`;
-}
-
-async function vender() {
-  if(carrito.length === 0) return;
-  const cli = document.getElementById('v-cliente-sel').value;
-  const met = document.getElementById('v-metodo').value;
-  const tot = carrito.reduce((s,i) => s + i.subt, 0);
-
-  await _supabase.from('ventas').insert([{ cliente: cli, total: tot, metodo_pago: met, pagado: met === 'contado', detalle: JSON.stringify(carrito) }]);
-  for(const item of carrito) {
-    const p = productos.find(x => x.id == item.id);
-    await _supabase.from('inventario').update({ stock: p.stock - item.cant }).eq('id', item.id);
-  }
-  generarFacturaPDF(cli, tot, met, [...carrito]);
-  location.reload();
-}
-
-function generarFacturaPDF(cli, tot, met, det) {
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
-  doc.text("GRUPO CRUCERR", 105, 20, { align: "center" });
-  doc.text(`Cliente: ${cli}`, 20, 40);
-  doc.text(`Total: L. ${tot.toFixed(2)}`, 20, 50);
-  const rows = det.map(i => [i.nombre, i.cant, `L. ${i.precio}`, `L. ${i.subt.toFixed(2)}`]);
-  doc.autoTable({ head: [['Prod', 'Cant', 'Precio', 'Subt']], body: rows, startY: 60 });
-  doc.save(`Factura_${cli}.pdf`);
-}
-
-async function guardarCliente() {
-  const n = document.getElementById('c-nombre').value;
-  const d = document.getElementById('c-direccion').value;
-  const t = document.getElementById('c-tel').value;
-  await _supabase.from('pulperia').insert([{ nombre: n, direccion: d, telefono: t }]);
-  alert("Cliente Guardado"); cargarTodo();
+  if(id) await _sb.from('inventario').update(obj).eq('id', id);
+  else await _sb.from('inventario').insert([obj]);
+  cerrarModal(); cargarDatos();
 }
 </script>
 </body>
