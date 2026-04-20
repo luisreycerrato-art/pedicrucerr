@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CRUCERR - PEDIDOS Y GESTIÓN</title>
+  <title>CRUCERR - PEDIDOS Y COBROS</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
@@ -12,14 +12,17 @@
     body { font-family: sans-serif; background: var(--bg); margin: 0; padding: 10px; }
     .header { background: var(--azul); color: white; padding: 15px; border-radius: 12px; text-align: center; margin-bottom: 10px; }
     .card { background: white; border-radius: 12px; padding: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 15px; }
-    .nav-tabs { display: flex; gap: 5px; margin-bottom: 15px; }
-    .tab-btn { background: #ddd; border: none; padding: 12px; border-radius: 8px; flex: 1; font-weight: bold; cursor: pointer; }
+    .nav-tabs { display: flex; gap: 5px; margin-bottom: 15px; overflow-x: auto; }
+    .tab-btn { background: #ddd; border: none; padding: 12px; border-radius: 8px; flex: 1; font-weight: bold; cursor: pointer; white-space: nowrap; }
     .active-tab { background: var(--azul); color: white; }
     input, select, button { width: 100%; padding: 12px; margin-top: 8px; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; font-size: 16px; }
     button { color: white; border: none; font-weight: bold; cursor: pointer; }
     table { width: 100%; border-collapse: collapse; font-size: 12px; }
     th, td { padding: 8px; text-align: left; border-bottom: 1px solid #eee; }
     .scroll { max-height: 300px; overflow-y: auto; background: white; border-radius: 8px; }
+    .item-carrito { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #eee; }
+    .btn-del { background: var(--rojo); width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+    .deuda-card { border-left: 6px solid var(--rojo); padding: 12px; background: #fff; margin-bottom: 10px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
   </style>
 </head>
 <body>
@@ -31,7 +34,8 @@
 
 <div class="nav-tabs">
   <button id="t-vender" class="tab-btn active-tab" onclick="showTab('vender')">🛒 Pedidos</button>
-  <button id="t-stock" class="tab-btn" onclick="showTab('stock')">📦 Inventario</button>
+  <button id="t-deuda" class="tab-btn" onclick="showTab('deuda')">💰 Deudores</button>
+  <button id="t-stock" class="tab-btn" onclick="showTab('stock')">📦 Stock</button>
   <button id="t-clientes" class="tab-btn" onclick="showTab('clientes')">👥 Clientes</button>
 </div>
 
@@ -39,8 +43,8 @@
   <div class="card">
     <label>👤 Cliente:</label>
     <select id="sel-cliente"></select>
-    <label>🔍 Buscar Medicamento:</label>
-    <input type="text" id="bus-prod" placeholder="Nombre..." oninput="filtrarVenta()">
+    <label style="margin-top:10px; display:block;">🔍 Buscar Medicamento:</label>
+    <input type="text" id="bus-prod" placeholder="Escriba el nombre..." oninput="filtrarVenta()">
     <div style="display: flex; gap: 8px;">
       <div style="flex: 3;"><select id="sel-prod"></select></div>
       <div style="flex: 1;"><input type="number" id="inp-cant" value="1"></div>
@@ -60,9 +64,16 @@
   </div>
 </div>
 
+<div id="v-deuda" class="tab-content" style="display:none;">
+  <div class="card">
+    <h3>💰 Cuentas por Cobrar</h3>
+    <div id="list-deudores">Cargando deudas...</div>
+  </div>
+</div>
+
 <div id="v-stock" class="tab-content" style="display:none;">
   <div class="card">
-    <button onclick="abrirModalProd()" style="background:var(--verde);">➕ Registrar Producto Nuevo</button>
+    <button onclick="abrirModalProd()" style="background:var(--verde);">➕ Nuevo Producto</button>
     <div class="scroll" style="margin-top:15px;">
       <table>
         <thead><tr><th>Nombre</th><th>Venta</th><th>Stock</th><th>Editar</th></tr></thead>
@@ -74,9 +85,9 @@
 
 <div id="v-clientes" class="tab-content" style="display:none;">
   <div class="card">
-    <h3>🆕 Nuevo Cliente</h3>
-    <input type="text" id="c-nombre" placeholder="Nombre del Negocio">
-    <input type="text" id="c-tel" placeholder="Teléfono de WhatsApp">
+    <h3>🆕 Registro de Cliente</h3>
+    <input type="text" id="c-nombre" placeholder="Nombre Comercial">
+    <input type="text" id="c-tel" placeholder="Teléfono WhatsApp (Ej: 99887766)">
     <input type="text" id="c-dir" placeholder="Dirección">
     <button onclick="guardarCliente()" style="background:var(--azul); margin-top:10px;">💾 Guardar Cliente</button>
   </div>
@@ -89,7 +100,7 @@
     <label>Nombre:</label><input type="text" id="m-nombre">
     <label>P. Compra:</label><input type="number" id="m-compra" step="0.01">
     <label>P. Venta:</label><input type="number" id="m-venta" step="0.01">
-    <label>Stock Inicial:</label><input type="number" id="m-stock">
+    <label>Stock:</label><input type="number" id="m-stock">
     <button onclick="guardarProducto()" style="background:var(--verde); margin-top:10px;">Guardar</button>
     <button onclick="cerrarModal()" style="background:#666; margin-top:5px;">Cerrar</button>
   </div>
@@ -102,28 +113,28 @@ const _sb = supabase.createClient(SB_URL, SB_KEY);
 
 let productos = [], clientes = [], carrito = [];
 
-window.onload = async () => { await cargarDatos(); };
+window.onload = async () => { await cargarTodo(); };
 
-async function cargarDatos() {
+async function cargarTodo() {
   document.getElementById('status').innerText = '⏳ Sincronizando...';
   const { data: p } = await _sb.from('inventario').select('*').order('nombre');
   const { data: c } = await _sb.from('pulperia').select('*').order('nombre');
+  const { data: v } = await _sb.from('ventas').select('*').eq('pagado', false).order('fecha', {ascending: false});
   
   productos = p || []; clientes = c || [];
   actualizarUI();
+  renderDeudores(v || []);
   document.getElementById('status').innerText = '● Sistema Online';
 }
 
 function actualizarUI() {
-  const pOpts = productos.map(p => `<option value="${p.id}">${p.nombre} (S: ${p.stock})</option>`).join('');
-  document.getElementById('sel-prod').innerHTML = pOpts;
+  document.getElementById('sel-prod').innerHTML = productos.map(p => `<option value="${p.id}">${p.nombre} (S: ${p.stock})</option>`).join('');
   document.getElementById('sel-cliente').innerHTML = clientes.map(c => `<option value="${c.nombre}" data-tel="${c.telefono}">${c.nombre}</option>`).join('');
-  
   document.getElementById('tabla-inv-body').innerHTML = productos.map(p => `
     <tr>
       <td>${p.nombre}</td>
       <td>L.${p.precio_venta}</td>
-      <td style="color:${p.stock < 10 ? 'red':'green'}"><b>${p.stock}</b></td>
+      <td style="color:${p.stock < 5 ? 'red':'green'}; font-weight:bold;">${p.stock}</td>
       <td><button onclick="editarProdInv(${p.id})" style="background:var(--azul); font-size:10px; width:auto; padding:4px;">Edit</button></td>
     </tr>`).join('');
 }
@@ -145,15 +156,31 @@ function addCarrito() {
   const id = document.getElementById('sel-prod').value;
   const cant = parseInt(document.getElementById('inp-cant').value);
   const p = productos.find(x => x.id == id);
-  if(!p || cant > p.stock) return alert("Stock insuficiente");
-  carrito.push({ ...p, cant, subt: p.precio_venta * cant });
+  if(!p || cant <= 0) return;
+
+  const itemExist = carrito.find(i => i.id == p.id);
+  const totalCant = itemExist ? itemExist.cant + cant : cant;
+
+  if(totalCant > p.stock) return alert("Stock insuficiente");
+
+  if(itemExist) {
+    itemExist.cant = totalCant;
+    itemExist.subt = itemExist.cant * p.precio_venta;
+  } else {
+    carrito.push({ id: p.id, nombre: p.nombre, cant, precio: p.precio_venta, subt: p.precio_venta * cant });
+  }
   renderCarrito();
 }
 
 function renderCarrito() {
-  let t = 0; document.getElementById('list-carrito').innerHTML = carrito.map((i, idx) => {
+  const div = document.getElementById('list-carrito');
+  let t = 0; 
+  div.innerHTML = carrito.map((i, idx) => {
     t += i.subt;
-    return `<div style="padding:8px; border-bottom:1px solid #eee;">${i.nombre} (x${i.cant}) - L.${i.subt.toFixed(2)}</div>`;
+    return `<div class="item-carrito">
+      <span><b>${i.nombre}</b> (x${i.cant})<br>L.${i.subt.toFixed(2)}</span>
+      <button onclick="carrito.splice(${idx},1);renderCarrito()" class="btn-del">❌</button>
+    </div>`;
   }).join('');
   document.getElementById('lbl-total').innerText = t.toFixed(2);
 }
@@ -165,48 +192,49 @@ async function finalizarVenta() {
   const cliTel = selCli.options[selCli.selectedIndex].getAttribute('data-tel') || "";
   const tot = document.getElementById('lbl-total').innerText;
   
-  // Guardar en Supabase
-  const { error } = await _sb.from('ventas').insert([{ 
+  await _sb.from('ventas').insert([{ 
     cliente: cliNombre, total: parseFloat(tot), metodo_pago: document.getElementById('sel-metodo').value, 
     pagado: document.getElementById('sel-metodo').value === 'contado', detalle: JSON.stringify(carrito), fecha: new Date().toISOString()
   }]);
   
-  if(error) return alert("Error: " + error.message);
-  
   for(const i of carrito) {
-    await _sb.from('inventario').update({ stock: i.stock - i.cant }).eq('id', i.id);
+    const pOrig = productos.find(x => x.id == i.id);
+    await _sb.from('inventario').update({ stock: pOrig.stock - i.cant }).eq('id', i.id);
   }
 
-  // Generar Factura y Abrir WhatsApp
-  generarFacturaYWhatsApp(cliNombre, cliTel, tot, [...carrito]);
+  generarPDFyWA(cliNombre, cliTel, tot, [...carrito]);
+  alert("✅ Venta Guardada");
+  location.reload();
 }
 
-function generarFacturaYWhatsApp(cli, tel, tot, items) {
+function renderDeudores(deudas) {
+  const div = document.getElementById('list-deudores');
+  if(deudas.length === 0) { div.innerHTML = "🎉 Sin deudas."; return; }
+  div.innerHTML = deudas.map(d => `
+    <div class="deuda-card">
+      <div><b>${d.cliente}</b><br><small>Debe: L. ${d.total.toFixed(2)}</small></div>
+      <button onclick="cobrar(${d.id})" style="background:var(--verde); width:auto; padding:10px;">COBRAR</button>
+    </div>`).join('');
+}
+
+async function cobrar(id) {
+  if(!confirm("¿Cobrar ahora?")) return;
+  await _sb.from('ventas').update({ pagado: true, fecha: new Date().toISOString() }).eq('id', id);
+  alert("✅ Cobro registrado");
+  cargarTodo();
+}
+
+function generarPDFyWA(cli, tel, tot, items) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
-  doc.text("GRUPO CRUCERR - FACTURA", 10, 10);
+  doc.text("GRUPO CRUCERR", 105, 10, {align: 'center'});
   doc.text(`Cliente: ${cli}`, 10, 20);
-  doc.autoTable({ head:[['Prod', 'Cant', 'Total']], body: items.map(i=>[i.nombre, i.cant, i.subt.toFixed(2)]), startY: 30 });
-  doc.text(`TOTAL: L. ${tot}`, 10, doc.lastAutoTable.finalY + 10);
-  
-  // Descarga el PDF
+  doc.autoTable({ head:[['Prod', 'Cant', 'Subt']], body: items.map(i=>[i.nombre, i.cant, i.subt.toFixed(2)]), startY: 25 });
   doc.save(`Factura_${cli}.pdf`);
 
-  // Opción WhatsApp: Envía texto detallado para compartir rápido
-  const msg = window.encodeURIComponent(`*GRUPO CRUCERR*\nFactura para: ${cli}\nTotal: L. ${tot}\n_El PDF se ha descargado en el teléfono._`);
-  const whatsappURL = `https://api.whatsapp.com/send?phone=504${tel}&text=${msg}`;
-  
-  setTimeout(() => {
-    window.location.href = whatsappURL;
-  }, 1500);
-}
-
-async function guardarCliente() {
-  const n = document.getElementById('c-nombre').value;
-  const t = document.getElementById('c-tel').value;
-  const d = document.getElementById('c-dir').value;
-  await _sb.from('pulperia').insert([{ nombre: n, telefono: t, direccion: d }]);
-  alert("Cliente Guardado"); cargarDatos();
+  let det = items.map(i => `* ${i.nombre} (x${i.cant}): L.${i.subt.toFixed(2)}`).join('%0A');
+  const msg = `*GRUPO CRUCERR*%0A*Factura:* ${cli}%0A--------------------%0A${det}%0A--------------------%0A*TOTAL: L. ${tot}*%0A_PDF descargado._`;
+  window.location.href = `https://api.whatsapp.com/send?phone=504${tel}&text=${msg}`;
 }
 
 function abrirModalProd() { document.getElementById('m-id').value=""; document.getElementById('modal-prod').style.display='block'; }
@@ -221,16 +249,23 @@ function editarProdInv(id) {
   document.getElementById('modal-prod').style.display='block';
 }
 async function guardarProducto() {
-  const id = document.getElementById('m-id').value;
   const obj = {
     nombre: document.getElementById('m-nombre').value,
     precio_compra: parseFloat(document.getElementById('m-compra').value),
     precio_venta: parseFloat(document.getElementById('m-venta').value),
     stock: parseInt(document.getElementById('m-stock').value)
   };
+  const id = document.getElementById('m-id').value;
   if(id) await _sb.from('inventario').update(obj).eq('id', id);
   else await _sb.from('inventario').insert([obj]);
-  cerrarModal(); cargarDatos();
+  cerrarModal(); cargarTodo();
+}
+async function guardarCliente() {
+  const n = document.getElementById('c-nombre').value;
+  const t = document.getElementById('c-tel').value;
+  const d = document.getElementById('c-dir').value;
+  await _sb.from('pulperia').insert([{ nombre: n, telefono: t, direccion: d }]);
+  alert("Cliente Guardado"); cargarTodo();
 }
 </script>
 </body>
