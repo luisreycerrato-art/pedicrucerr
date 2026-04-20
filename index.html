@@ -43,7 +43,7 @@
 
 <div class="nav-container">
   <button id="btn-vender-tab" class="tab-btn active-tab" onclick="cambiarVista('vender')">🛒 Vender</button>
-  <button id="btn-stock-tab" class="tab-btn" onclick="cambiarVista('stock')">📦 Stock</button>
+  <button id="btn-stock-tab" class="tab-btn" onclick="cambiarVista('stock')">📦 Inventario</button>
   <button id="btn-clientes-tab" class="tab-btn" onclick="cambiarVista('clientes')">👥 Clientes</button>
 </div>
 
@@ -83,13 +83,27 @@
 </div>
 
 <div id="vista-stock" style="display:none;">
-  <div class="card">
-    <h3>📥 Entrada de Mercadería</h3>
+  <div class="card" style="border-left: 6px solid var(--azul);">
+    <h3>📥 Entrada de Mercadería (Existente)</h3>
     <label>Seleccionar Producto:</label>
     <select id="s-prod-sel"></select>
     <label>Cantidad a Sumar:</label>
     <input type="number" id="s-cant" placeholder="Ej: 100">
     <button onclick="aumentarStock()" style="background: var(--azul); margin-top:15px;">⬆ Actualizar Stock</button>
+  </div>
+
+  <div class="card" style="border-left: 6px solid var(--verde); margin-top: 20px;">
+    <h3>✨ Registrar Nuevo Producto</h3>
+    <label>Nombre del Producto:</label>
+    <input type="text" id="n-prod-nombre" placeholder="Ej: Amoxicilina 500mg">
+    
+    <label>Precio de Venta (L.):</label>
+    <input type="number" id="n-prod-precio" placeholder="Ej: 10.00" step="0.01">
+    
+    <label>Stock Inicial:</label>
+    <input type="number" id="n-prod-stock" placeholder="Ej: 100">
+    
+    <button onclick="crearNuevoProducto()" style="background: var(--verde); margin-top:15px;">💾 Guardar Producto Nuevo</button>
   </div>
 </div>
 
@@ -166,9 +180,10 @@ function filtrarProductos() {
 function alCarrito() {
   const id = document.getElementById('v-prod-sel').value;
   const cant = parseInt(document.getElementById('v-cant').value);
+  if(!id) return alert("Seleccione un producto");
   const p = productos.find(x => x.id == id);
   
-  if(cant > p.stock) return alert("⚠️ Stock insuficiente en inventario");
+  if(cant > p.stock) return alert("⚠️ Stock insuficiente");
   
   carrito.push({ id: p.id, nombre: p.nombre, cant, precio: p.precio, subt: p.precio * cant });
   renderCarrito();
@@ -182,14 +197,14 @@ function renderCarrito() {
     div.innerHTML += `
       <div style="padding:8px 0; border-bottom:1px solid #eee; display:flex; justify-content:space-between;">
         <span><b>${item.nombre}</b> (x${item.cant})</span>
-        <span>L. ${item.subt.toFixed(2)} <button onclick="carrito.splice(${i},1);renderCarrito()" style="background:var(--rojo); padding:2px 6px; font-size:10px; margin-left:10px;">X</button></span>
+        <span>L. ${item.subt.toFixed(2)} <button onclick="carrito.splice(${i},1);renderCarrito()" style="background:var(--rojo); padding:2px 6px; font-size:10px; margin-left:10px; width:auto;">X</button></span>
       </div>`;
   });
   document.getElementById('total-lbl').innerText = `L. ${t.toFixed(2)}`;
 }
 
 async function vender() {
-  if(carrito.length === 0) return alert("Añada productos al pedido");
+  if(carrito.length === 0) return alert("Añada productos");
   const cli = document.getElementById('v-cliente-sel').value;
   const met = document.getElementById('v-metodo').value;
   const tot = carrito.reduce((s,i)=>s+i.subt, 0);
@@ -210,16 +225,45 @@ async function vender() {
   location.reload();
 }
 
+async function crearNuevoProducto() {
+  const nombre = document.getElementById('n-prod-nombre').value.trim();
+  const precio = parseFloat(document.getElementById('n-prod-precio').value);
+  const stock = parseInt(document.getElementById('n-prod-stock').value);
+
+  if (!nombre || isNaN(precio) || isNaN(stock)) return alert("Complete todos los campos");
+
+  const { error } = await _supabase.from('inventario').insert([{ nombre, precio, stock }]);
+
+  if (error) alert("Error: " + error.message);
+  else {
+    alert("✅ Producto registrado");
+    document.getElementById('n-prod-nombre').value = '';
+    document.getElementById('n-prod-precio').value = '';
+    document.getElementById('n-prod-stock').value = '';
+    cargarTodo();
+  }
+}
+
+async function aumentarStock() {
+  const id = document.getElementById('s-prod-sel').value;
+  const cantExtra = parseInt(document.getElementById('s-cant').value);
+  if(isNaN(cantExtra) || !id) return alert("Seleccione producto y cantidad");
+  
+  const p = productos.find(x => x.id == id);
+  await _supabase.from('inventario').update({ stock: p.stock + cantExtra }).eq('id', id);
+  alert("Stock actualizado");
+  document.getElementById('s-cant').value = '';
+  cargarTodo();
+}
+
 async function guardarCliente() {
   const nombre = document.getElementById('c-nombre').value;
   const direccion = document.getElementById('c-direccion').value;
   const telefono = document.getElementById('c-tel').value;
 
-  if(!nombre || !direccion) return alert("Nombre y Dirección son obligatorios");
+  if(!nombre || !direccion) return alert("Nombre y Dirección obligatorios");
 
-  const { error } = await _supabase.from('pulperia').insert([{
-    nombre, direccion, telefono
-  }]);
+  const { error } = await _supabase.from('pulperia').insert([{ nombre, direccion, telefono }]);
 
   if(error) alert("Error: " + error.message);
   else {
@@ -232,22 +276,10 @@ async function guardarCliente() {
   }
 }
 
-async function aumentarStock() {
-  const id = document.getElementById('s-prod-sel').value;
-  const cantExtra = parseInt(document.getElementById('s-cant').value);
-  if(isNaN(cantExtra)) return;
-  
-  const p = productos.find(x => x.id == id);
-  await _supabase.from('inventario').update({ stock: p.stock + cantExtra }).eq('id', id);
-  alert("Stock actualizado");
-  document.getElementById('s-cant').value = '';
-  cargarTodo();
-}
-
 function renderDeudas(deudas) {
   const div = document.getElementById('lista-deudas');
   let t = 0;
-  if(deudas.length === 0) { div.innerHTML = "No hay saldos pendientes."; return; }
+  if(deudas.length === 0) { div.innerHTML = "No hay deudas."; return; }
   
   div.innerHTML = deudas.map(d => {
     t += d.total;
@@ -266,7 +298,7 @@ function renderDeudas(deudas) {
 }
 
 async function marcarPagado(id) {
-  if(!confirm("¿Confirmar cobro de esta deuda?")) return;
+  if(!confirm("¿Confirmar pago?")) return;
   await _supabase.from('ventas').update({ pagado: true }).eq('id', id);
   cargarTodo();
 }
@@ -274,17 +306,12 @@ async function marcarPagado(id) {
 function generarFacturaPDF(cliente, total, metodo, detalle) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
-  doc.setFontSize(18);
   doc.text("GRUPO CRUCERR", 105, 20, { align: "center" });
-  doc.setFontSize(10);
   doc.text(`CLIENTE: ${cliente}`, 20, 40);
-  doc.text(`TIPO: ${metodo.toUpperCase()}`, 20, 46);
-  doc.text(`FECHA: ${new Date().toLocaleString()}`, 20, 52);
-  
-  const body = detalle.map(i => [i.nombre, i.cant, `L.${i.precio.toFixed(2)}`, `L.${i.subt.toFixed(2)}`]);
+  doc.text(`TOTAL: L. ${total.toFixed(2)}`, 20, 50);
+  const body = detalle.map(i => [i.nombre, i.cant, `L.${i.precio}`, `L.${i.subt.toFixed(2)}`]);
   doc.autoTable({ head: [['Producto', 'Cant', 'Precio', 'Subtotal']], body: body, startY: 60 });
-  doc.text(`TOTAL FACTURADO: L. ${total.toFixed(2)}`, 20, doc.lastAutoTable.finalY + 10);
-  doc.save(`Venta_${cliente}.pdf`);
+  doc.save(`Factura_${cliente}.pdf`);
 }
 </script>
 </body>
