@@ -14,20 +14,13 @@
     body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 10px; }
     .header { background: var(--azul); color: white; padding: 15px; border-radius: 12px; text-align: center; margin-bottom: 10px; }
     .card { background: white; border-radius: 12px; padding: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 15px; }
-    
     input, select, button { width: 100%; padding: 12px; margin-top: 8px; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; font-size: 16px; }
-    label { font-weight: bold; display: block; margin-top: 10px; color: #333; }
-    
     button { color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.3s; }
     .btn-azul { background: var(--azul); }
     .btn-verde { background: var(--verde); }
-    .btn-vender { background: var(--verde); padding: 18px; font-size: 18px; margin-top: 15px; }
-    
     .nav-container { display: flex; gap: 5px; margin-bottom: 15px; flex-wrap: wrap; }
-    .tab-btn { background: #ccc; color: #333; flex: 1; min-width: 80px; font-size: 14px; padding: 10px 5px; }
+    .tab-btn { background: #ccc; color: #333; flex: 1; min-width: 80px; font-size: 14px; padding: 10px 5px; border-radius: 8px; }
     .active-tab { background: var(--azul); color: white; }
-
-    /* Estilos de Tabla de Inventario */
     .table-container { overflow-x: auto; margin-top: 10px; }
     table { width: 100%; border-collapse: collapse; background: white; font-size: 14px; }
     th { background: #eee; padding: 10px; text-align: left; }
@@ -35,18 +28,15 @@
     .stock-badge { padding: 4px 8px; border-radius: 4px; font-weight: bold; }
     .stock-low { background: #ffebeb; color: var(--rojo); }
     .stock-ok { background: #ebffeb; color: var(--verde); }
-
     .total-box { background: var(--azul); color: white; padding: 15px; border-radius: 10px; text-align: right; margin-top: 15px; }
     .total-box span { font-size: 1.5rem; font-weight: bold; display: block; }
-    
-    .deuda-card { border-left: 6px solid var(--rojo); background: #fff; padding: 12px; margin-bottom: 10px; border-radius: 8px; }
   </style>
 </head>
 <body>
 
 <div class="header">
   <h2 style="margin:0;">GRUPO CRUCERR</h2>
-  <div id="status" style="font-size:12px; font-weight: bold;">Sincronizando...</div>
+  <div id="status" style="font-size:12px;">Sincronizando...</div>
 </div>
 
 <div class="nav-container">
@@ -59,8 +49,8 @@
   <div class="card">
     <label>👤 Cliente:</label>
     <select id="v-cliente-sel"></select>
-    <label>🔍 Producto:</label>
-    <input type="text" id="buscador-prod" placeholder="Buscar medicamento..." oninput="filtrarProductosVenta()">
+    <label style="margin-top:10px; display:block;">🔍 Buscar Producto:</label>
+    <input type="text" id="buscador-prod" placeholder="Nombre del medicamento..." oninput="filtrarVenta()">
     <div style="display: flex; gap: 8px;">
       <div style="flex: 3;"><select id="v-prod-sel"></select></div>
       <div style="flex: 1;"><input type="number" id="v-cant" value="1" min="1"></div>
@@ -72,39 +62,30 @@
     <h3>📋 Detalle del Pedido</h3>
     <div id="lista-carrito"></div>
     <div class="total-box">TOTAL VENTA <span id="total-lbl">L. 0.00</span></div>
-    <label>Método de Pago:</label>
-    <select id="v-metodo">
+    <select id="v-metodo" style="margin-top:15px; border: 2px solid var(--azul);">
       <option value="contado">PAGO: CONTADO ✅</option>
       <option value="credito">PAGO: CRÉDITO ❌</option>
     </select>
-    <button onclick="vender()" class="btn-vender">🚀 FINALIZAR Y FACTURAR</button>
-  </div>
-
-  <div class="card" style="border-top: 5px solid var(--rojo);">
-    <h3>💰 Cuentas por Cobrar</h3>
-    <div id="lista-deudas">Cargando...</div>
-    <div class="total-box" style="background: var(--rojo);">PENDIENTE TOTAL <span id="total-deuda-lbl">L. 0.00</span></div>
+    <button onclick="vender()" class="btn-verde" style="padding:18px; font-size:18px; margin-top:10px; width:100%;">🚀 FINALIZAR Y FACTURAR</button>
   </div>
 </div>
 
 <div id="vista-stock" style="display:none;">
   <div class="card">
-    <button onclick="abrirModalNuevo()" class="btn-verde">➕ Nuevo Producto</button>
-    <label style="margin-top:15px;">🔍 Filtrar Inventario:</label>
-    <input type="text" id="filtro-inv" placeholder="Nombre del producto..." oninput="renderInventarioTabla()">
+    <button onclick="abrirModal()" class="btn-verde">➕ Nuevo Producto</button>
+    <input type="text" id="filtro-inv" placeholder="Filtrar inventario..." oninput="renderInventario()" style="margin-top:15px;">
     
     <div class="table-container">
       <table>
         <thead>
           <tr>
             <th>Producto</th>
-            <th>Precio</th>
+            <th>Venta</th>
             <th>Stock</th>
-            <th>Acción</th>
+            <th></th>
           </tr>
         </thead>
-        <tbody id="tabla-inv-body">
-          </tbody>
+        <tbody id="tabla-inv-body"></tbody>
       </table>
     </div>
   </div>
@@ -113,26 +94,24 @@
 <div id="vista-clientes" style="display:none;">
   <div class="card">
     <h3>🆕 Nuevo Cliente</h3>
-    <input type="text" id="c-nombre" placeholder="Nombre Negocio">
+    <input type="text" id="c-nombre" placeholder="Nombre de Pulpería">
     <input type="text" id="c-direccion" placeholder="Dirección">
     <input type="text" id="c-tel" placeholder="Teléfono">
     <button onclick="guardarCliente()" class="btn-azul" style="margin-top:15px;">💾 Guardar Cliente</button>
   </div>
 </div>
 
-<div id="modal-producto" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:1000; padding:20px; box-sizing:border-box;">
-  <div class="card" style="max-width:500px; margin:auto;">
+<div id="modal-prod" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:1000; padding:20px; box-sizing:border-box;">
+  <div class="card" style="max-width:400px; margin:auto; margin-top:10%;">
     <h3 id="modal-titulo">Producto</h3>
-    <input type="hidden" id="edit-id">
-    <label>Nombre:</label>
-    <input type="text" id="m-nombre">
-    <label>Precio:</label>
-    <input type="number" id="m-precio" step="0.01">
-    <label>Stock Actual:</label>
-    <input type="number" id="m-stock">
+    <input type="hidden" id="m-id">
+    <label>Nombre:</label><input type="text" id="m-nombre">
+    <label>Precio Compra:</label><input type="number" id="m-compra" step="0.01">
+    <label>Precio Venta:</label><input type="number" id="m-venta" step="0.01">
+    <label>Stock:</label><input type="number" id="m-stock">
     <div style="display:flex; gap:10px; margin-top:20px;">
       <button onclick="cerrarModal()" style="background:#666;">Cancelar</button>
-      <button id="btn-guardar-prod" onclick="procesarProducto()" class="btn-verde">Guardar</button>
+      <button onclick="guardarProducto()" class="btn-verde">Guardar</button>
     </div>
   </div>
 </div>
@@ -147,89 +126,81 @@ let productos = [], clientes = [], carrito = [];
 window.onload = cargarTodo;
 
 async function cargarTodo() {
-  document.getElementById('status').innerText = '⏳ Sincronizando...';
+  document.getElementById('status').innerText = 'Actualizando...';
   const { data: p } = await _supabase.from('inventario').select('*').order('nombre');
   const { data: c } = await _supabase.from('pulperia').select('*').order('nombre');
-  const { data: v } = await _supabase.from('ventas').select('*').eq('pagado', false).order('fecha', {ascending: false});
-
+  
   productos = p || []; clientes = c || [];
-  actualizarSelectsVenta();
-  renderInventarioTabla();
-  renderDeudas(v || []);
+  actualizarSelects();
+  renderInventario();
   document.getElementById('status').innerText = '● Sistema Online';
 }
 
-function actualizarSelectsVenta() {
-  const h = productos.map(p => `<option value="${p.id}">${p.nombre} (Stock: ${p.stock})</option>`).join('');
+function actualizarSelects() {
+  const h = productos.map(p => `<option value="${p.id}">${p.nombre} (S: ${p.stock})</option>`).join('');
   document.getElementById('v-prod-sel').innerHTML = h;
   document.getElementById('v-cliente-sel').innerHTML = clientes.map(c => `<option value="${c.nombre}">${c.nombre}</option>`).join('');
 }
 
-function renderInventarioTabla() {
-  const filtro = document.getElementById('filtro-inv').value.toLowerCase();
-  const lista = productos.filter(p => p.nombre.toLowerCase().includes(filtro));
-  const body = document.getElementById('tabla-inv-body');
-  
-  body.innerHTML = lista.map(p => `
+function cambiarVista(v) {
+  document.getElementById('vista-vender').style.display = v === 'vender' ? 'block' : 'none';
+  document.getElementById('vista-stock').style.display = v === 'stock' ? 'block' : 'none';
+  document.getElementById('vista-clientes').style.display = v === 'clientes' ? 'block' : 'none';
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active-tab'));
+  document.getElementById('btn-' + v + '-tab').classList.add('active-tab');
+}
+
+function renderInventario() {
+  const f = document.getElementById('filtro-inv').value.toLowerCase();
+  const filtered = productos.filter(p => p.nombre.toLowerCase().includes(f));
+  document.getElementById('tabla-inv-body').innerHTML = filtered.map(p => `
     <tr>
       <td><b>${p.nombre}</b></td>
-      <td>L. ${p.precio.toFixed(2)}</td>
-      <td><span class="stock-badge ${p.stock < 10 ? 'stock-low' : 'stock-ok'}">${p.stock}</span></td>
-      <td><button onclick="abrirModalEditar(${p.id})" style="background:var(--azul); padding:5px; font-size:12px;">Editar</button></td>
+      <td>L. ${p.precio_venta}</td>
+      <td><span class="stock-badge ${p.stock < 5 ? 'stock-low' : 'stock-ok'}">${p.stock}</span></td>
+      <td><button onclick="editarProd(${p.id})" style="background:var(--azul); padding:5px; font-size:12px; width:auto;">Edit</button></td>
     </tr>
   `).join('');
 }
 
-function cambiarVista(vista) {
-  document.querySelectorAll('[id^="vista-"]').forEach(d => d.style.display = 'none');
-  document.getElementById('vista-' + vista).style.display = 'block';
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active-tab'));
-  document.getElementById('btn-' + vista + '-tab').classList.add('active-tab');
-}
-
-// LÓGICA DE PRODUCTOS (MODAL)
-function abrirModalNuevo() {
-  document.getElementById('modal-titulo').innerText = "Nuevo Producto";
-  document.getElementById('edit-id').value = "";
+function abrirModal() {
+  document.getElementById('m-id').value = "";
   document.getElementById('m-nombre').value = "";
-  document.getElementById('m-precio').value = "";
+  document.getElementById('m-compra').value = "";
+  document.getElementById('m-venta').value = "";
   document.getElementById('m-stock').value = "";
-  document.getElementById('modal-producto').style.display = 'block';
+  document.getElementById('modal-prod').style.display = 'block';
 }
 
-function abrirModalEditar(id) {
+function editarProd(id) {
   const p = productos.find(x => x.id == id);
-  document.getElementById('modal-titulo').innerText = "Editar Producto";
-  document.getElementById('edit-id').value = p.id;
+  document.getElementById('m-id').value = p.id;
   document.getElementById('m-nombre').value = p.nombre;
-  document.getElementById('m-precio').value = p.precio;
+  document.getElementById('m-compra').value = p.precio_compra;
+  document.getElementById('m-venta').value = p.precio_venta;
   document.getElementById('m-stock').value = p.stock;
-  document.getElementById('modal-producto').style.display = 'block';
+  document.getElementById('modal-prod').style.display = 'block';
 }
 
-function cerrarModal() { document.getElementById('modal-producto').style.display = 'none'; }
+function cerrarModal() { document.getElementById('modal-prod').style.display = 'none'; }
 
-async function procesarProducto() {
-  const id = document.getElementById('edit-id').value;
-  const datos = {
+async function guardarProducto() {
+  const id = document.getElementById('m-id').value;
+  const obj = {
     nombre: document.getElementById('m-nombre').value,
-    precio: parseFloat(document.getElementById('m-precio').value),
+    precio_compra: parseFloat(document.getElementById('m-compra').value),
+    precio_venta: parseFloat(document.getElementById('m-venta').value),
     stock: parseInt(document.getElementById('m-stock').value)
   };
-
-  if(id) {
-    await _supabase.from('inventario').update(datos).eq('id', id);
-  } else {
-    await _supabase.from('inventario').insert([datos]);
-  }
+  if(id) await _supabase.from('inventario').update(obj).eq('id', id);
+  else await _supabase.from('inventario').insert([obj]);
   cerrarModal(); cargarTodo();
 }
 
-// REUTILIZACIÓN DE FUNCIONES DE VENTA
-function filtrarProductosVenta() {
-  const bus = document.getElementById('buscador-prod').value.toLowerCase();
-  const filtrados = productos.filter(p => p.nombre.toLowerCase().includes(bus));
-  document.getElementById('v-prod-sel').innerHTML = filtrados.map(p => `<option value="${p.id}">${p.nombre} (Stock: ${p.stock})</option>`).join('');
+function filtrarVenta() {
+  const b = document.getElementById('buscador-prod').value.toLowerCase();
+  const f = productos.filter(p => p.nombre.toLowerCase().includes(b));
+  document.getElementById('v-prod-sel').innerHTML = f.map(p => `<option value="${p.id}">${p.nombre} (S: ${p.stock})</option>`).join('');
 }
 
 function alCarrito() {
@@ -237,17 +208,15 @@ function alCarrito() {
   const cant = parseInt(document.getElementById('v-cant').value);
   const p = productos.find(x => x.id == id);
   if(cant > p.stock) return alert("Stock insuficiente");
-  carrito.push({ id: p.id, nombre: p.nombre, cant, precio: p.precio, subt: p.precio * cant });
+  carrito.push({ id: p.id, nombre: p.nombre, cant, precio: p.precio_venta, subt: p.precio_venta * cant });
   renderCarrito();
 }
 
 function renderCarrito() {
-  const div = document.getElementById('lista-carrito');
-  let t = 0; div.innerHTML = '';
-  carrito.forEach((item, i) => {
+  let t = 0; document.getElementById('lista-carrito').innerHTML = carrito.map((item, i) => {
     t += item.subt;
-    div.innerHTML += `<div style="padding:5px 0; border-bottom:1px solid #eee;">${item.nombre} (x${item.cant}) - L.${item.subt.toFixed(2)} <button onclick="carrito.splice(${i},1);renderCarrito()" style="background:var(--rojo); width:auto; padding:2px 8px; float:right;">X</button></div>`;
-  });
+    return `<div style="border-bottom:1px solid #eee; padding:5px 0;">${item.nombre} (x${item.cant}) - L. ${item.subt.toFixed(2)} <button onclick="carrito.splice(${i},1);renderCarrito()" style="background:var(--rojo); width:auto; padding:2px 8px; float:right;">X</button></div>`;
+  }).join('');
   document.getElementById('total-lbl').innerText = `L. ${t.toFixed(2)}`;
 }
 
@@ -255,7 +224,7 @@ async function vender() {
   if(carrito.length === 0) return;
   const cli = document.getElementById('v-cliente-sel').value;
   const met = document.getElementById('v-metodo').value;
-  const tot = carrito.reduce((s,i)=>s+i.subt, 0);
+  const tot = carrito.reduce((s,i) => s + i.subt, 0);
 
   await _supabase.from('ventas').insert([{ cliente: cli, total: tot, metodo_pago: met, pagado: met === 'contado', detalle: JSON.stringify(carrito) }]);
   for(const item of carrito) {
@@ -266,37 +235,23 @@ async function vender() {
   location.reload();
 }
 
-async function guardarCliente() {
-  const nombre = document.getElementById('c-nombre').value;
-  const direccion = document.getElementById('c-direccion').value;
-  const telefono = document.getElementById('c-tel').value;
-  await _supabase.from('pulperia').insert([{ nombre, direccion, telefono }]);
-  alert("Cliente guardado"); cargarTodo();
-}
-
-function renderDeudas(deudas) {
-  const div = document.getElementById('lista-deudas');
-  let t = 0;
-  div.innerHTML = deudas.map(d => {
-    t += d.total;
-    return `<div class="deuda-card"><p><b>👤 ${d.cliente}</b></p><p>Total: L. ${d.total.toFixed(2)}</p><button onclick="marcarPagado(${d.id})" style="background:var(--azul); width:auto; padding:5px 10px;">Marcar Pagado</button></div>`;
-  }).join('');
-  document.getElementById('total-deuda-lbl').innerText = `L. ${t.toFixed(2)}`;
-}
-
-async function marcarPagado(id) {
-  await _supabase.from('ventas').update({ pagado: true }).eq('id', id);
-  cargarTodo();
-}
-
-function generarFacturaPDF(cliente, total, metodo, detalle) {
+function generarFacturaPDF(cli, tot, met, det) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
   doc.text("GRUPO CRUCERR", 105, 20, { align: "center" });
-  doc.text(`CLIENTE: ${cliente}`, 20, 40);
-  const body = detalle.map(i => [i.nombre, i.cant, `L.${i.precio}`, `L.${i.subt.toFixed(2)}`]);
-  doc.autoTable({ head: [['Producto', 'Cant', 'Precio', 'Subtotal']], body: body, startY: 50 });
-  doc.save(`Venta_${cliente}.pdf`);
+  doc.text(`Cliente: ${cli}`, 20, 40);
+  doc.text(`Total: L. ${tot.toFixed(2)}`, 20, 50);
+  const rows = det.map(i => [i.nombre, i.cant, `L. ${i.precio}`, `L. ${i.subt.toFixed(2)}`]);
+  doc.autoTable({ head: [['Prod', 'Cant', 'Precio', 'Subt']], body: rows, startY: 60 });
+  doc.save(`Factura_${cli}.pdf`);
+}
+
+async function guardarCliente() {
+  const n = document.getElementById('c-nombre').value;
+  const d = document.getElementById('c-direccion').value;
+  const t = document.getElementById('c-tel').value;
+  await _supabase.from('pulperia').insert([{ nombre: n, direccion: d, telefono: t }]);
+  alert("Cliente Guardado"); cargarTodo();
 }
 </script>
 </body>
