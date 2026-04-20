@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Grupo Crucerr - Gestión Total</title>
+  
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+
+  <style>
+    :root { --azul: #052c5c; --verde: #28a745; --rojo: #dc3545; --naranja: #fd7e14; --bg: #f4f7f6; }
+    body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 10px; }
+    .header { background: var(--azul); color: white; padding: 15px; border-radius: 12px; text-align: center; margin-bottom: 10px; }
+    .card { background: white; border-radius: 12px; padding: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 15px; }
+    
+    input, select, button { width: 100%; padding: 12px; margin-top: 8px; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; font-size: 16px; }
+    label { font-weight: bold; display: block; margin-top: 10px; color: #333; }
+    
+    button { color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.3s; }
+    .btn-add { background: var(--azul); }
+    .btn-vender { background: var(--verde); padding: 18px; font-size: 18px; margin-top: 15px; }
+    
+    .nav-container { display: flex; gap: 5px; margin-bottom: 15px; flex-wrap: wrap; }
+    .tab-btn { background: #ccc; color: #333; flex: 1; min-width: 80px; font-size: 14px; padding: 10px 5px; }
+    .active-tab { background: var(--azul); color: white; }
+
+    .total-box { background: var(--azul); color: white; padding: 15px; border-radius: 10px; text-align: right; margin-top: 15px; }
+    .total-box span { font-size: 1.5rem; font-weight: bold; display: block; }
+    
+    .deuda-card { border-left: 6px solid var(--rojo); background: #fff; padding: 12px; margin-bottom: 10px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+    .deuda-cliente-nombre { color: var(--rojo); font-size: 1.1rem; font-weight: bold; text-transform: uppercase; margin: 0; }
+    .deuda-detalle-texto { font-size: 13px; color: #444; margin: 5px 0; font-style: italic; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h2 style="margin:0;">GRUPO CRUCERR</h2>
+  <div id="status" style="font-size:12px; font-weight: bold;">Cargando...</div>
+</div>
+
+<div class="nav-container">
+  <button id="btn-vender-tab" class="tab-btn active-tab" onclick="cambiarVista('vender')">🛒 Vender</button>
+  <button id="btn-stock-tab" class="tab-btn" onclick="cambiarVista('stock')">📦 Stock</button>
+  <button id="btn-clientes-tab" class="tab-btn" onclick="cambiarVista('clientes')">👥 Clientes</button>
+</div>
+
+<div id="vista-vender">
+  <div class="card">
+    <label>👤 Seleccionar Cliente:</label>
+    <select id="v-cliente-sel"></select>
+    
+    <label>🔍 Buscar Producto:</label>
+    <input type="text" id="buscador-prod" placeholder="Escriba nombre del producto..." oninput="filtrarProductos()">
+    
+    <div style="display: flex; gap: 8px;">
+      <div style="flex: 3;"><select id="v-prod-sel"></select></div>
+      <div style="flex: 1;"><input type="number" id="v-cant" value="1" min="1"></div>
+    </div>
+    <button onclick="alCarrito()" class="btn-add">➕ Añadir al Pedido</button>
+  </div>
+
+  <div class="card">
+    <h3>📋 Detalle del Pedido</h3>
+    <div id="lista-carrito"></div>
+    <div class="total-box">TOTAL VENTA <span id="total-lbl">L. 0.00</span></div>
+    
+    <label>Método de Pago:</label>
+    <select id="v-metodo" style="border: 2px solid var(--azul);">
+      <option value="contado">PAGO: CONTADO ✅</option>
+      <option value="credito">PAGO: CRÉDITO ❌</option>
+    </select>
+    <button onclick="vender()" class="btn-vender">🚀 FINALIZAR Y FACTURAR</button>
+  </div>
+
+  <div class="card" style="border-top: 5px solid var(--rojo);">
+    <h3>💰 Cuentas por Cobrar</h3>
+    <div id="lista-deudas">Cargando...</div>
+    <div class="total-box" style="background: var(--rojo);">PENDIENTE TOTAL <span id="total-deuda-lbl">L. 0.00</span></div>
+  </div>
+</div>
+
+<div id="vista-stock" style="display:none;">
+  <div class="card">
+    <h3>📥 Entrada de Mercadería</h3>
+    <label>Seleccionar Producto:</label>
+    <select id="s-prod-sel"></select>
+    <label>Cantidad a Sumar:</label>
+    <input type="number" id="s-cant" placeholder="Ej: 100">
+    <button onclick="aumentarStock()" style="background: var(--azul); margin-top:15px;">⬆ Actualizar Stock</button>
+  </div>
+</div>
+
+<div id="vista-clientes" style="display:none;">
+  <div class="card">
+    <h3>🆕 Registrar Nueva Pulpería / Cliente</h3>
+    <label>Nombre del Negocio:</label>
+    <input type="text" id="c-nombre" placeholder="Nombre comercial">
+    
+    <label>Dirección Completa:</label>
+    <input type="text" id="c-direccion" placeholder="Barrio, calle, ciudad...">
+    
+    <label>Teléfono:</label>
+    <input type="text" id="c-tel" placeholder="Número de contacto">
+    
+    <button onclick="guardarCliente()" style="background: var(--naranja); margin-top:15px;">💾 Guardar Cliente</button>
+  </div>
+</div>
+
+<script>
+const SB_URL = 'https://jbdfuhowfqfjmpjygaow.supabase.co';
+const SB_KEY = 'sb_publishable_4mLkbjij9oGVtS_zX051VQ_Vsbjjga9';
+const _supabase = supabase.createClient(SB_URL, SB_KEY);
+
+let productos = [], clientes = [], carrito = [];
+
+window.onload = cargarTodo;
+
+async function cargarTodo() {
+  document.getElementById('status').innerText = '⏳ Actualizando...';
+  try {
+    const { data: p } = await _supabase.from('inventario').select('*').order('nombre');
+    const { data: c } = await _supabase.from('pulperia').select('*').order('nombre');
+    const { data: v } = await _supabase.from('ventas').select('*').eq('pagado', false).order('fecha', {ascending: false});
+
+    productos = p || []; 
+    clientes = c || [];
+    
+    actualizarSelects(productos);
+    renderDeudas(v || []);
+    
+    document.getElementById('status').innerText = '● Sistema Online';
+    document.getElementById('status').style.color = '#28a745';
+  } catch (err) {
+    document.getElementById('status').innerText = '❌ Error de conexión';
+  }
+}
+
+function actualizarSelects(lista) {
+  const optionsHtml = lista.map(p => `<option value="${p.id}">${p.nombre} (Stock: ${p.stock})</option>`).join('');
+  document.getElementById('v-prod-sel').innerHTML = optionsHtml;
+  document.getElementById('s-prod-sel').innerHTML = optionsHtml;
+  
+  document.getElementById('v-cliente-sel').innerHTML = 
+    clientes.map(c => `<option value="${c.nombre}">${c.nombre}</option>`).join('');
+}
+
+function cambiarVista(vista) {
+  document.getElementById('vista-vender').style.display = vista === 'vender' ? 'block' : 'none';
+  document.getElementById('vista-stock').style.display = vista === 'stock' ? 'block' : 'none';
+  document.getElementById('vista-clientes').style.display = vista === 'clientes' ? 'block' : 'none';
+  
+  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active-tab'));
+  document.getElementById('btn-' + vista + '-tab').classList.add('active-tab');
+}
+
+function filtrarProductos() {
+  const bus = document.getElementById('buscador-prod').value.toLowerCase();
+  const filtrados = productos.filter(p => p.nombre.toLowerCase().includes(bus));
+  const h = filtrados.map(p => `<option value="${p.id}">${p.nombre} (Stock: ${p.stock})</option>`).join('');
+  document.getElementById('v-prod-sel').innerHTML = h;
+}
+
+function alCarrito() {
+  const id = document.getElementById('v-prod-sel').value;
+  const cant = parseInt(document.getElementById('v-cant').value);
+  const p = productos.find(x => x.id == id);
+  
+  if(cant > p.stock) return alert("⚠️ Stock insuficiente en inventario");
+  
+  carrito.push({ id: p.id, nombre: p.nombre, cant, precio: p.precio, subt: p.precio * cant });
+  renderCarrito();
+}
+
+function renderCarrito() {
+  const div = document.getElementById('lista-carrito');
+  let t = 0; div.innerHTML = '';
+  carrito.forEach((item, i) => {
+    t += item.subt;
+    div.innerHTML += `
+      <div style="padding:8px 0; border-bottom:1px solid #eee; display:flex; justify-content:space-between;">
+        <span><b>${item.nombre}</b> (x${item.cant})</span>
+        <span>L. ${item.subt.toFixed(2)} <button onclick="carrito.splice(${i},1);renderCarrito()" style="background:var(--rojo); padding:2px 6px; font-size:10px; margin-left:10px;">X</button></span>
+      </div>`;
+  });
+  document.getElementById('total-lbl').innerText = `L. ${t.toFixed(2)}`;
+}
+
+async function vender() {
+  if(carrito.length === 0) return alert("Añada productos al pedido");
+  const cli = document.getElementById('v-cliente-sel').value;
+  const met = document.getElementById('v-metodo').value;
+  const tot = carrito.reduce((s,i)=>s+i.subt, 0);
+
+  const { error } = await _supabase.from('ventas').insert([{
+    cliente: cli, total: tot, metodo_pago: met, pagado: met === 'contado', detalle: JSON.stringify(carrito)
+  }]);
+
+  if(error) return alert("Error: " + error.message);
+
+  for(const item of carrito) {
+    const p = productos.find(x => x.id == item.id);
+    await _supabase.from('inventario').update({ stock: p.stock - item.cant }).eq('id', item.id);
+  }
+
+  generarFacturaPDF(cli, tot, met, [...carrito]);
+  alert("✅ Venta Guardada");
+  location.reload();
+}
+
+async function guardarCliente() {
+  const nombre = document.getElementById('c-nombre').value;
+  const direccion = document.getElementById('c-direccion').value;
+  const telefono = document.getElementById('c-tel').value;
+
+  if(!nombre || !direccion) return alert("Nombre y Dirección son obligatorios");
+
+  const { error } = await _supabase.from('pulperia').insert([{
+    nombre, direccion, telefono
+  }]);
+
+  if(error) alert("Error: " + error.message);
+  else {
+    alert("✅ Cliente guardado");
+    document.getElementById('c-nombre').value = '';
+    document.getElementById('c-direccion').value = '';
+    document.getElementById('c-tel').value = '';
+    cargarTodo();
+    cambiarVista('vender');
+  }
+}
+
+async function aumentarStock() {
+  const id = document.getElementById('s-prod-sel').value;
+  const cantExtra = parseInt(document.getElementById('s-cant').value);
+  if(isNaN(cantExtra)) return;
+  
+  const p = productos.find(x => x.id == id);
+  await _supabase.from('inventario').update({ stock: p.stock + cantExtra }).eq('id', id);
+  alert("Stock actualizado");
+  document.getElementById('s-cant').value = '';
+  cargarTodo();
+}
+
+function renderDeudas(deudas) {
+  const div = document.getElementById('lista-deudas');
+  let t = 0;
+  if(deudas.length === 0) { div.innerHTML = "No hay saldos pendientes."; return; }
+  
+  div.innerHTML = deudas.map(d => {
+    t += d.total;
+    const items = JSON.parse(d.detalle).map(i => `${i.cant} ${i.nombre}`).join(', ');
+    return `
+      <div class="deuda-card">
+        <p class="deuda-cliente-nombre">👤 ${d.cliente}</p>
+        <p class="deuda-detalle-texto">${items}</p>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <b style="font-size:1.1rem; color:var(--rojo);">L. ${d.total.toFixed(2)}</b>
+          <button onclick="marcarPagado(${d.id})" style="background:var(--azul); font-size:12px; width:auto; padding:5px 12px;">PAGAR</button>
+        </div>
+      </div>`;
+  }).join('');
+  document.getElementById('total-deuda-lbl').innerText = `L. ${t.toFixed(2)}`;
+}
+
+async function marcarPagado(id) {
+  if(!confirm("¿Confirmar cobro de esta deuda?")) return;
+  await _supabase.from('ventas').update({ pagado: true }).eq('id', id);
+  cargarTodo();
+}
+
+function generarFacturaPDF(cliente, total, metodo, detalle) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  doc.setFontSize(18);
+  doc.text("GRUPO CRUCERR", 105, 20, { align: "center" });
+  doc.setFontSize(10);
+  doc.text(`CLIENTE: ${cliente}`, 20, 40);
+  doc.text(`TIPO: ${metodo.toUpperCase()}`, 20, 46);
+  doc.text(`FECHA: ${new Date().toLocaleString()}`, 20, 52);
+  
+  const body = detalle.map(i => [i.nombre, i.cant, `L.${i.precio.toFixed(2)}`, `L.${i.subt.toFixed(2)}`]);
+  doc.autoTable({ head: [['Producto', 'Cant', 'Precio', 'Subtotal']], body: body, startY: 60 });
+  doc.text(`TOTAL FACTURADO: L. ${total.toFixed(2)}`, 20, doc.lastAutoTable.finalY + 10);
+  doc.save(`Venta_${cliente}.pdf`);
+}
+</script>
+</body>
+</html>
