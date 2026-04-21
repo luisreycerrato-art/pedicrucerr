@@ -92,7 +92,7 @@
     <button onclick="abrirModalCliente()" style="background:var(--naranja); margin-bottom:10px;">+ Nuevo Cliente</button>
     <div class="scroll-v">
       <table>
-        <thead><tr><th>Nombre</th><th>Teléfono</th><th>Edit</th></tr></thead>
+        <thead><tr><th>Nombre</th><th>Ubicación</th><th>Edit</th></tr></thead>
         <tbody id="tabla-clientes-body"></tbody>
       </table>
     </div>
@@ -139,7 +139,7 @@
     <input type="hidden" id="mc-id">
     <label>Nombre del Negocio:</label><input type="text" id="mc-nombre">
     <label>Teléfono:</label><input type="text" id="mc-tel">
-    <label>Dirección:</label><input type="text" id="mc-dir">
+    <label>Ubicación:</label><input type="text" id="mc-ubi">
     <button id="btn-guardar-cliente" onclick="guardarCliente()" style="background:var(--naranja); margin-top:10px;">Guardar Cliente</button>
     <button onclick="cerrarModalCliente()" style="background:#666; margin-top:5px;">Cerrar</button>
   </div>
@@ -184,7 +184,7 @@ function actualizarUI() {
   document.getElementById('tabla-clientes-body').innerHTML = clientes.map(c => `
     <tr>
       <td>${c.nombre}</td>
-      <td>${c.telefono || '---'}</td>
+      <td>${c.ubicacion || '---'}</td>
       <td><button onclick="editarCliente(${c.id})" class="btn-edit" style="background:var(--naranja)">E</button></td>
     </tr>`).join('');
 }
@@ -244,14 +244,14 @@ async function consultarAdmin() {
   const fSel = document.getElementById('filtro-fecha').value;
   const { data: v } = await _sb.from('ventas').select('*');
   const dia = v.filter(x => x.fecha.startsWith(fSel));
-  let vT = 0, gT = 0, histHtml = "";
+  let vT = 0, gT = 0, hHtml = "";
   dia.forEach(venta => {
     vT += (parseFloat(venta.total) || 0);
     const items = JSON.parse(venta.detalle || '[]');
     items.forEach(i => { gT += ((parseFloat(i.precio_venta) || 0) - (parseFloat(i.precio_compra) || 0)) * parseInt(i.cant); });
-    histHtml += `<tr><td>${venta.cliente}</td><td>L.${venta.total.toFixed(2)}</td><td style="color:${venta.pagado?'green':'red'}">${venta.pagado?'Pagado':'Crédito'}</td></tr>`;
+    hHtml += `<tr><td>${venta.cliente}</td><td>L.${venta.total.toFixed(2)}</td><td style="color:${venta.pagado?'green':'red'}">${venta.pagado?'Pagado':'Crédito'}</td></tr>`;
   });
-  document.getElementById('historial-body').innerHTML = histHtml || "<tr><td colspan='3'>Sin ventas hoy</td></tr>";
+  document.getElementById('historial-body').innerHTML = hHtml || "<tr><td colspan='3'>Sin ventas hoy</td></tr>";
   document.getElementById('c-venta').innerText = vT.toFixed(2);
   document.getElementById('c-ganancia').innerText = gT.toFixed(2);
   document.getElementById('c-40').innerText = (gT * 0.4).toFixed(2);
@@ -274,26 +274,24 @@ async function cobrar(id) {
   alert("✅ Cobrado hoy"); cargarDatos();
 }
 
-// MODAL CLIENTE CORREGIDO
+// CLIENTES (Corregido para columna 'ubicacion')
 function abrirModalCliente() { 
   document.getElementById('mc-id').value=""; 
   document.getElementById('mc-nombre').value=""; 
   document.getElementById('mc-tel').value=""; 
-  document.getElementById('mc-dir').value="";
+  document.getElementById('mc-ubi').value="";
   document.getElementById('mc-titulo').innerText = "Nuevo Cliente";
   document.getElementById('modal-cliente').style.display='block'; 
 }
 
-function cerrarModalCliente() { 
-  document.getElementById('modal-cliente').style.display='none'; 
-}
+function cerrarModalCliente() { document.getElementById('modal-cliente').style.display='none'; }
 
 function editarCliente(id) {
   const c = clientes.find(x => x.id == id);
   document.getElementById('mc-id').value = c.id;
   document.getElementById('mc-nombre').value = c.nombre;
   document.getElementById('mc-tel').value = c.telefono || "";
-  document.getElementById('mc-dir').value = c.direccion || "";
+  document.getElementById('mc-ubi').value = c.ubicacion || "";
   document.getElementById('mc-titulo').innerText = "Editar Cliente";
   document.getElementById('modal-cliente').style.display='block';
 }
@@ -301,23 +299,20 @@ function editarCliente(id) {
 async function guardarCliente() {
   const nombre = document.getElementById('mc-nombre').value;
   const tel = document.getElementById('mc-tel').value;
-  const dir = document.getElementById('mc-dir').value;
+  const ubi = document.getElementById('mc-ubi').value;
   const id = document.getElementById('mc-id').value;
 
-  if(!nombre) return alert("Por favor ingrese el nombre del negocio");
+  if(!nombre) return alert("Ingrese el nombre del negocio");
 
-  const obj = { nombre: nombre, telefono: tel, direccion: dir };
-
+  const obj = { nombre: nombre, telefono: tel, ubicacion: ubi };
   document.getElementById('btn-guardar-cliente').innerText = "⏳ Guardando...";
 
   if(id) {
-    // Si hay ID, es una edición
     const { error } = await _sb.from('pulperia').update(obj).eq('id', id);
-    if(error) alert("Error al editar: " + error.message);
+    if(error) alert("Error: " + error.message);
   } else {
-    // Si no hay ID, es un cliente nuevo
     const { error } = await _sb.from('pulperia').insert([obj]);
-    if(error) alert("Error al guardar nuevo: " + error.message);
+    if(error) alert("Error: " + error.message);
   }
   
   document.getElementById('btn-guardar-cliente').innerText = "Guardar Cliente";
