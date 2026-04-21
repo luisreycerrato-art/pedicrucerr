@@ -8,25 +8,25 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
   <style>
-    :root { --azul: #052c5c; --verde: #28a745; --rojo: #dc3545; --bg: #f4f7f6; --purpura: #6f42c1; --rosa: #e83e8c; --naranja: #fd7e14; }
+    :root { --azul: #052c5c; --verde: #28a745; --rojo: #dc3545; --bg: #f4f7f6; --naranja: #fd7e14; --purpura: #6f42c1; --rosa: #e83e8c; }
     body { font-family: sans-serif; background: var(--bg); margin: 0; padding: 10px; }
     .header { background: var(--azul); color: white; padding: 15px; border-radius: 12px; text-align: center; margin-bottom: 10px; }
     .card { background: white; border-radius: 12px; padding: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 15px; }
     .nav-tabs { display: flex; gap: 5px; margin-bottom: 15px; overflow-x: auto; }
     .tab-btn { background: #ddd; border: none; padding: 10px; border-radius: 8px; flex: 1; font-weight: bold; white-space: nowrap; cursor: pointer; }
     .active-tab { background: var(--azul); color: white; }
-    .cierre-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .cierre-item { padding: 15px; border-radius: 12px; color: white; text-align: center; }
-    .cierre-item h4 { margin: 0; font-size: 0.8rem; opacity: 0.9; }
-    .cierre-item p { margin: 5px 0 0; font-size: 1.1rem; font-weight: bold; }
     input, select, button { width: 100%; padding: 12px; margin-top: 8px; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; font-size: 16px; }
     button { color: white; border: none; font-weight: bold; cursor: pointer; }
-    .deuda-card { border-left: 6px solid var(--rojo); padding: 12px; background: #fff; margin-bottom: 10px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-    th, td { text-align: left; padding: 8px; border-bottom: 1px solid #eee; font-size: 12px; }
-    th { background: #f8f9fa; color: var(--azul); }
+    .cierre-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+    .cierre-item { padding: 15px; border-radius: 12px; color: white; text-align: center; }
+    .cierre-item h4 { margin: 0; font-size: 0.8rem; opacity: 0.9; }
+    .cierre-item p { margin: 5px 0 0; font-size: 1rem; font-weight: bold; }
+    table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    th, td { text-align: left; padding: 8px; border-bottom: 1px solid #eee; }
     .scroll-v { max-height: 250px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; background: white; }
-    .btn-edit { background: var(--azul); font-size: 10px; width: auto; padding: 4px 8px; }
+    .item-carrito { display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid #eee; }
+    .btn-del { background: var(--rojo); width: 30px; height: 30px; border-radius: 50%; }
+    .deuda-card { border-left: 6px solid var(--rojo); padding: 12px; background: #fff; margin-bottom: 10px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
   </style>
 </head>
 <body>
@@ -47,23 +47,23 @@
     <label>👤 Seleccionar Cliente:</label>
     <select id="sel-cliente"></select>
     <label style="margin-top:10px; display:block;">🔍 Buscar Medicamento:</label>
-    <input type="text" id="bus-prod" placeholder="Escriba el nombre..." oninput="filtrarProductos()">
+    <input type="text" id="bus-prod" placeholder="Nombre..." oninput="filtrarVenta()">
     <div style="display: flex; gap: 8px;">
       <div style="flex: 3;"><select id="sel-prod"></select></div>
-      <div style="flex: 1;"><input type="number" id="inp-cant" value="1" min="1"></div>
+      <div style="flex: 1;"><input type="number" id="inp-cant" value="1"></div>
     </div>
-    <button onclick="addCarrito()" style="background: var(--azul); margin-top:15px;">🛒 Añadir al Pedido</button>
+    <button onclick="addCarrito()" style="background: var(--azul); margin-top:10px;">🛒 Añadir al Pedido</button>
   </div>
   <div class="card">
     <div id="list-carrito"></div>
     <div style="background:var(--azul); color:white; padding:15px; border-radius:10px; text-align:right; margin-top:10px;">
       TOTAL L. <span id="lbl-total" style="font-size:1.5rem; font-weight:bold;">0.00</span>
     </div>
-    <select id="sel-metodo" style="margin-top:15px; border: 2px solid var(--azul);">
+    <select id="sel-metodo" style="margin-top:10px;">
       <option value="contado">PAGO: CONTADO ✅</option>
       <option value="credito">PAGO: CRÉDITO ❌</option>
     </select>
-    <button onclick="finalizarVenta()" style="background:var(--verde); margin-top:15px; padding:18px; font-size: 18px;">🚀 FACTURAR Y GUARDAR</button>
+    <button onclick="finalizarVenta()" style="background:var(--verde); margin-top:15px; padding:18px; font-size:18px;">🚀 FACTURAR Y ENVIAR</button>
   </div>
 </div>
 
@@ -79,7 +79,6 @@
     <input type="date" id="filtro-fecha">
     <button onclick="consultarAdmin()" style="background: var(--azul); margin-top:10px;">📊 Consultar Día</button>
   </div>
-  
   <div class="cierre-grid">
     <div class="cierre-item" style="background: var(--azul);"><h4>VENTA</h4><p id="c-venta">0.00</p></div>
     <div class="cierre-item" style="background: var(--verde);"><h4>GANANCIA</h4><p id="c-ganancia">0.00</p></div>
@@ -87,7 +86,7 @@
     <div class="cierre-item" style="background: var(--rosa);"><h4>20%</h4><p id="c-20">0.00</p></div>
   </div>
 
-  <div class="card" style="margin-top:15px; border-left: 5px solid var(--naranja);">
+  <div class="card" style="border-left: 5px solid var(--naranja);">
     <h3>👥 Gestión de Clientes</h3>
     <button onclick="abrirModalCliente()" style="background:var(--naranja); margin-bottom:10px;">+ Nuevo Cliente</button>
     <div class="scroll-v">
@@ -98,22 +97,12 @@
     </div>
   </div>
 
-  <div class="card" style="margin-top:15px; border-left: 5px solid var(--azul);">
-    <h3>📄 Historial de Facturas (Día)</h3>
-    <div class="scroll-v">
-      <table>
-        <thead><tr><th>Cliente</th><th>Total</th><th>Estado</th></tr></thead>
-        <tbody id="historial-body"></tbody>
-      </table>
-    </div>
-  </div>
-
-  <div class="card" style="margin-top:15px;">
+  <div class="card">
     <h3>📦 Inventario</h3>
     <button onclick="abrirModalProd()" style="background:var(--verde);">+ Nuevo Producto</button>
     <div class="scroll-v">
       <table>
-        <thead><tr><th>Nombre</th><th>Venta</th><th>Stock</th><th>Edit</th></tr></thead>
+        <thead><tr><th>Nombre</th><th>Stock</th><th>Edit</th></tr></thead>
         <tbody id="tabla-inv-body"></tbody>
       </table>
     </div>
@@ -162,31 +151,19 @@ async function cargarDatos() {
   const { data: p } = await _sb.from('inventario').select('*').order('nombre');
   const { data: c } = await _sb.from('pulperia').select('*').order('nombre');
   const { data: v } = await _sb.from('ventas').select('*').eq('pagado', false).order('fecha', {ascending: false});
-  
   productos = p || []; clientes = c || [];
   actualizarUI();
   renderDeudores(v || []);
-  document.getElementById('status').innerText = '● En línea';
+  document.getElementById('status').innerText = '● Sistema Crucerr Online';
 }
 
 function actualizarUI() {
   document.getElementById('sel-prod').innerHTML = productos.map(p => `<option value="${p.id}">${p.nombre} (S: ${p.stock})</option>`).join('');
-  document.getElementById('sel-cliente').innerHTML = clientes.map(c => `<option value="${c.nombre}">${c.nombre}</option>`).join('');
+  const cliSelect = document.getElementById('sel-cliente');
+  cliSelect.innerHTML = clientes.map(c => `<option value="${c.nombre}" data-tel="${c.telefono}">${c.nombre}</option>`).join('');
   
-  document.getElementById('tabla-inv-body').innerHTML = productos.map(p => `
-    <tr>
-      <td>${p.nombre}</td>
-      <td>L.${p.precio_venta}</td>
-      <td style="color:${p.stock < 10 ? 'red':'green'}"><b>${p.stock}</b></td>
-      <td><button onclick="editarProd(${p.id})" class="btn-edit">E</button></td>
-    </tr>`).join('');
-
-  document.getElementById('tabla-clientes-body').innerHTML = clientes.map(c => `
-    <tr>
-      <td>${c.nombre}</td>
-      <td>${c.ubicacion || '---'}</td>
-      <td><button onclick="editarCliente(${c.id})" class="btn-edit" style="background:var(--naranja)">E</button></td>
-    </tr>`).join('');
+  document.getElementById('tabla-inv-body').innerHTML = productos.map(p => `<tr><td>${p.nombre}</td><td>${p.stock}</td><td><button onclick="editarProd(${p.id})" style="background:var(--azul); padding:4px; font-size:10px; width:auto;">Edit</button></td></tr>`).join('');
+  document.getElementById('tabla-clientes-body').innerHTML = clientes.map(c => `<tr><td>${c.nombre}</td><td>${c.ubicacion || ''}</td><td><button onclick="editarCliente(${c.id})" style="background:var(--naranja); padding:4px; font-size:10px; width:auto;">Edit</button></td></tr>`).join('');
 }
 
 function showTab(tab) {
@@ -197,7 +174,7 @@ function showTab(tab) {
   if(tab === 'admin') consultarAdmin();
 }
 
-function filtrarProductos() {
+function filtrarVenta() {
   const b = document.getElementById('bus-prod').value.toLowerCase();
   const f = productos.filter(p => p.nombre.toLowerCase().includes(b));
   document.getElementById('sel-prod').innerHTML = f.map(p => `<option value="${p.id}">${p.nombre} (S: ${p.stock})</option>`).join('');
@@ -208,137 +185,103 @@ function addCarrito() {
   const cant = parseInt(document.getElementById('inp-cant').value);
   const p = productos.find(x => x.id == id);
   if(!p || cant > p.stock) return alert("⚠️ Stock insuficiente");
-  carrito.push({ ...p, cant, subt: (parseFloat(p.precio_venta) || 0) * cant });
+  
+  const existe = carrito.find(x => x.id == p.id);
+  if(existe) { existe.cant += cant; existe.subt = existe.cant * existe.precio_venta; }
+  else { carrito.push({ ...p, cant, subt: p.precio_venta * cant }); }
   renderCarrito();
 }
 
 function renderCarrito() {
   let t = 0; document.getElementById('list-carrito').innerHTML = carrito.map((i, idx) => {
     t += i.subt;
-    return `<div style="padding:10px; border-bottom:1px solid #eee; display:flex; justify-content:space-between;">
-      <span><b>${i.nombre}</b> (x${i.cant})</span>
-      <span>L.${i.subt.toFixed(2)}</span>
-    </div>`;
+    return `<div class="item-carrito"><span><b>${i.nombre}</b> (x${i.cant})<br>L.${i.subt.toFixed(2)}</span><button onclick="carrito.splice(${idx},1);renderCarrito()" class="btn-del">❌</button></div>`;
   }).join('');
   document.getElementById('lbl-total').innerText = t.toFixed(2);
 }
 
 async function finalizarVenta() {
-  if(carrito.length === 0) return alert("❌ El pedido está vacío");
-  const cli = document.getElementById('sel-cliente').value;
+  if(carrito.length === 0) return alert("❌ Carrito vacío");
+  const selCli = document.getElementById('sel-cliente');
+  const cli = selCli.value;
+  const tel = selCli.options[selCli.selectedIndex].getAttribute('data-tel') || "";
   const met = document.getElementById('sel-metodo').value;
-  const tot = carrito.reduce((s,i) => s + i.subt, 0);
+  const tot = document.getElementById('lbl-total').innerText;
 
-  const { error } = await _sb.from('ventas').insert([{ 
-    cliente: cli, total: tot, metodo_pago: met, pagado: met === 'contado', detalle: JSON.stringify(carrito), fecha: new Date().toISOString()
-  }]);
-  
+  const { error } = await _sb.from('ventas').insert([{ cliente: cli, total: parseFloat(tot), metodo_pago: met, pagado: met === 'contado', detalle: JSON.stringify(carrito), fecha: new Date().toISOString() }]);
   if(error) return alert(error.message);
+
   for(const i of carrito) { await _sb.from('inventario').update({ stock: i.stock - i.cant }).eq('id', i.id); }
-  generarPDF(cli, tot, met, [...carrito]);
-  alert("✅ Venta Guardada");
+  
+  generarPDFyWA(cli, tel, tot, [...carrito]);
+  alert("✅ Guardado. Comparta por WhatsApp.");
   location.reload();
 }
 
-async function consultarAdmin() {
-  const fSel = document.getElementById('filtro-fecha').value;
-  const { data: v } = await _sb.from('ventas').select('*');
-  const dia = v.filter(x => x.fecha.startsWith(fSel));
-  let vT = 0, gT = 0, hHtml = "";
-  dia.forEach(venta => {
-    vT += (parseFloat(venta.total) || 0);
-    const items = JSON.parse(venta.detalle || '[]');
-    items.forEach(i => { gT += ((parseFloat(i.precio_venta) || 0) - (parseFloat(i.precio_compra) || 0)) * parseInt(i.cant); });
-    hHtml += `<tr><td>${venta.cliente}</td><td>L.${venta.total.toFixed(2)}</td><td style="color:${venta.pagado?'green':'red'}">${venta.pagado?'Pagado':'Crédito'}</td></tr>`;
-  });
-  document.getElementById('historial-body').innerHTML = hHtml || "<tr><td colspan='3'>Sin ventas hoy</td></tr>";
-  document.getElementById('c-venta').innerText = vT.toFixed(2);
-  document.getElementById('c-ganancia').innerText = gT.toFixed(2);
-  document.getElementById('c-40').innerText = (gT * 0.4).toFixed(2);
-  document.getElementById('c-20').innerText = (gT * 0.2).toFixed(2);
-}
-
-function renderDeudores(deudas) {
-  const div = document.getElementById('list-deudores');
-  if(deudas.length === 0) { div.innerHTML = "🎉 Sin deudas."; return; }
-  div.innerHTML = deudas.map(d => `
-    <div class="deuda-card">
-      <div><b>${d.cliente}</b><br><small>Debe: L. ${d.total.toFixed(2)}</small></div>
-      <button onclick="cobrar(${d.id})" style="background:var(--verde); width:auto; padding:10px;">COBRAR</button>
-    </div>`).join('');
-}
-
-async function cobrar(id) {
-  if(!confirm("¿Confirmar pago hoy?")) return;
-  await _sb.from('ventas').update({ pagado: true, fecha: new Date().toISOString() }).eq('id', id);
-  alert("✅ Cobrado hoy"); cargarDatos();
-}
-
-// CLIENTES (Corregido para columna 'ubicacion')
-function abrirModalCliente() { 
-  document.getElementById('mc-id').value=""; 
-  document.getElementById('mc-nombre').value=""; 
-  document.getElementById('mc-tel').value=""; 
-  document.getElementById('mc-ubi').value="";
-  document.getElementById('mc-titulo').innerText = "Nuevo Cliente";
-  document.getElementById('modal-cliente').style.display='block'; 
-}
-
-function cerrarModalCliente() { document.getElementById('modal-cliente').style.display='none'; }
-
-function editarCliente(id) {
-  const c = clientes.find(x => x.id == id);
-  document.getElementById('mc-id').value = c.id;
-  document.getElementById('mc-nombre').value = c.nombre;
-  document.getElementById('mc-tel').value = c.telefono || "";
-  document.getElementById('mc-ubi').value = c.ubicacion || "";
-  document.getElementById('mc-titulo').innerText = "Editar Cliente";
-  document.getElementById('modal-cliente').style.display='block';
-}
-
-async function guardarCliente() {
-  const nombre = document.getElementById('mc-nombre').value;
-  const tel = document.getElementById('mc-tel').value;
-  const ubi = document.getElementById('mc-ubi').value;
-  const id = document.getElementById('mc-id').value;
-
-  if(!nombre) return alert("Ingrese el nombre del negocio");
-
-  const obj = { nombre: nombre, telefono: tel, ubicacion: ubi };
-  document.getElementById('btn-guardar-cliente').innerText = "⏳ Guardando...";
-
-  if(id) {
-    const { error } = await _sb.from('pulperia').update(obj).eq('id', id);
-    if(error) alert("Error: " + error.message);
-  } else {
-    const { error } = await _sb.from('pulperia').insert([obj]);
-    if(error) alert("Error: " + error.message);
-  }
-  
-  document.getElementById('btn-guardar-cliente').innerText = "Guardar Cliente";
-  cerrarModalCliente(); 
-  cargarDatos();
-}
-
-function generarPDF(cli, tot, met, items) {
+function generarPDFyWA(cli, tel, tot, items) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
   doc.text("GRUPO CRUCERR", 105, 15, { align: "center" });
   doc.text(`Cliente: ${cli}`, 20, 30);
   doc.autoTable({ head:[['Prod', 'Cant', 'Total']], body: items.map(i=>[i.nombre, i.cant, i.subt.toFixed(2)]), startY: 40 });
   doc.save(`Factura_${cli}.pdf`);
+
+  let detWA = items.map(i => `* ${i.nombre} (x${i.cant}): L.${i.subt.toFixed(2)}`).join('%0A');
+  const msg = `*GRUPO CRUCERR*%0A*Factura:* ${cli}%0A--------------------%0A${detWA}%0A--------------------%0A*TOTAL: L. ${tot}*%0A_PDF descargado en el teléfono._`;
+  setTimeout(() => { window.location.href = `https://api.whatsapp.com/send?phone=504${tel}&text=${msg}`; }, 1500);
 }
 
+function renderDeudores(deudas) {
+  const div = document.getElementById('list-deudores');
+  if(deudas.length === 0) { div.innerHTML = "🎉 Sin deudas."; return; }
+  div.innerHTML = deudas.map(d => `<div class="deuda-card"><div><b>${d.cliente}</b><br><small>Debe: L. ${d.total.toFixed(2)}</small></div><button onclick="cobrar(${d.id})" style="background:var(--verde); width:auto; padding:10px;">COBRAR</button></div>`).join('');
+}
+
+async function cobrar(id) {
+  if(!confirm("¿Confirmar pago hoy?")) return;
+  await _sb.from('ventas').update({ pagado: true, fecha: new Date().toISOString() }).eq('id', id);
+  cargarDatos();
+}
+
+async function consultarAdmin() {
+  const fSel = document.getElementById('filtro-fecha').value;
+  const { data: v } = await _sb.from('ventas').select('*');
+  const dia = v.filter(x => x.fecha.startsWith(fSel));
+  let vT = 0, gT = 0;
+  dia.forEach(venta => {
+    vT += (parseFloat(venta.total) || 0);
+    const items = JSON.parse(venta.detalle || '[]');
+    items.forEach(i => { gT += ((parseFloat(i.precio_venta) || 0) - (parseFloat(i.precio_compra) || 0)) * parseInt(i.cant); });
+  });
+  document.getElementById('c-venta').innerText = vT.toFixed(2);
+  document.getElementById('c-ganancia').innerText = gT.toFixed(2);
+  document.getElementById('c-40').innerText = (gT * 0.4).toFixed(2);
+  document.getElementById('c-20').innerText = (gT * 0.2).toFixed(2);
+}
+
+// MODALES Y GESTIÓN
+function abrirModalCliente() { document.getElementById('mc-id').value=""; document.getElementById('mc-nombre').value=""; document.getElementById('mc-tel').value=""; document.getElementById('mc-ubi').value=""; document.getElementById('modal-cliente').style.display='block'; }
+function cerrarModalCliente() { document.getElementById('modal-cliente').style.display='none'; }
+function editarCliente(id) {
+  const c = clientes.find(x => x.id == id);
+  document.getElementById('mc-id').value = c.id; document.getElementById('mc-nombre').value = c.nombre;
+  document.getElementById('mc-tel').value = c.telefono; document.getElementById('mc-ubi').value = c.ubicacion || "";
+  document.getElementById('modal-cliente').style.display='block';
+}
+async function guardarCliente() {
+  const obj = { nombre: document.getElementById('mc-nombre').value, telefono: document.getElementById('mc-tel').value, ubicacion: document.getElementById('mc-ubi').value };
+  const id = document.getElementById('mc-id').value;
+  if(id) await _sb.from('pulperia').update(obj).eq('id', id);
+  else await _sb.from('pulperia').insert([obj]);
+  cerrarModalCliente(); cargarDatos();
+}
 function abrirModalProd() { document.getElementById('m-id').value=""; document.getElementById('modal-prod').style.display='block'; }
 function cerrarModal() { document.getElementById('modal-prod').style.display='none'; }
 function editarProd(id) {
   const p = productos.find(x => x.id == id);
-  document.getElementById('m-id').value = p.id;
-  document.getElementById('m-nombre').value = p.nombre;
-  document.getElementById('m-compra').value = p.precio_compra;
-  document.getElementById('m-venta').value = p.precio_venta;
-  document.getElementById('m-stock').value = p.stock;
-  document.getElementById('modal-prod').style.display='block';
+  document.getElementById('m-id').value = p.id; document.getElementById('m-nombre').value = p.nombre;
+  document.getElementById('m-compra').value = p.precio_compra; document.getElementById('m-venta').value = p.precio_venta;
+  document.getElementById('m-stock').value = p.stock; document.getElementById('modal-prod').style.display='block';
 }
 async function guardarProducto() {
   const obj = { nombre: document.getElementById('m-nombre').value, precio_compra: parseFloat(document.getElementById('m-compra').value), precio_venta: parseFloat(document.getElementById('m-venta').value), stock: parseInt(document.getElementById('m-stock').value) };
